@@ -196,7 +196,13 @@ def DownloadAndProcessesItemJob(item):
             if os.path.exists(packageFolderRoot):
                 shutil.rmtree(packageFolderRoot)
             return # skip this item
-    os.makedirs(packageFolderTar,exist_ok=True) # this will make all folders required, including "-" which is used to store the tar balls
+    try:
+        os.makedirs(packageFolderTar,exist_ok=True) # this will make all folders required, including "-" which is used to store the tar balls
+    except Exception as ex:
+        ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, packageFolderTar, ex)
+        SaveAdnAppendToErrorLog(ErrorLog)
+        return
+    
     # we will store a file indicating latest revision we processed
     CurrentRev=None
     # ShouldProcess=False
@@ -221,13 +227,11 @@ def DownloadAndProcessesItemJob(item):
         for k in versions_dict:
             try:
                 tarBallDownloadLink = versions_dict[k]['dist']['tarball']
-                r = requests.get(tarBallDownloadLink, stream=True)
-                block_size = 1024*8
+                r = requests.get(tarBallDownloadLink, timeout=600)
                 fname = tarBallDownloadLink.rsplit('/', 1)[-1]
                 tarBallLocalFile=os.path.join(packageFolderTar,fname)
                 with open(tarBallLocalFile, 'wb') as f:
-                    for data in r.iter_content(block_size):
-                        f.write(data)
+                    f.write(r.content)
             except Exception as ex:
                 AllGood = False
                 ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, tarBallDownloadLink, ex)
