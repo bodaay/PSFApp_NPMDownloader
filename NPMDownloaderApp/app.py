@@ -9,6 +9,7 @@ import time
 import signal
 import base64
 import codecs
+import math
 import urllib.parse
 from datetime import datetime
 # I'm using thead pool, because its easier and I can use global variables easily with it, We don't need high processing power for this project, just multi thread
@@ -19,7 +20,7 @@ import tqdm  # pip3 install tqdm
 import re
 
 MaxItemsToProcess = 30
-ROOT_FOLDER_NAME = "z:/NPM/"
+ROOT_FOLDER_NAME = "e:/NPM/"
 SkimDB_Main_Registry_Link = "https://skimdb.npmjs.com/registry/"
 working_path = os.path.join(ROOT_FOLDER_NAME,"sync_data_indexes")
 packages_path = os.path.join(ROOT_FOLDER_NAME, "data")
@@ -190,6 +191,22 @@ def DownloadAndProcessesItemJob(item):
     package_name_url_safe = urllib.parse.quote(package_name, safe='')
     json_index_file = os.path.join(packageFolderRoot,"index.json")
     # first we need to download the json file and name it as index.json
+    if 'deleted' in item:
+        if item['deleted']==True:
+            if os.path.exists(packageFolderRoot):
+                shutil.rmtree(packageFolderRoot)
+            return # skip this item
+    os.makedirs(packageFolderTar,exist_ok=True) # this will make all folders required, including "-" which is used to store the tar balls
+    # we will store a file indicating latest revision we processed
+    CurrentRev=None
+    # ShouldProcess=False
+    if os.path.exists(rev_file):
+        with open (rev_file,'r') as f:
+            CurrentRev=f.readline().strip()
+    if CurrentRev:
+        if CurrentRev==item_rev:
+            # print(colored("package '%s' with same rev %s number, will be skipped"%(item['id'],item_rev),'red'))
+            return
     try:
         #write json index file
         downloadURL = SkimDB_Main_Registry_Link + package_name_url_safe
@@ -204,6 +221,7 @@ def DownloadAndProcessesItemJob(item):
         for k in versions_dict:
             try:
                 tarBallDownloadLink = versions_dict[k]['dist']['tarball']
+                print (tarBallDownloadLink)
                 r = requests.get(tarBallDownloadLink, stream=True)
                 block_size = 1024*8
                 fname = tarBallDownloadLink.rsplit('/', 1)[-1]
@@ -221,68 +239,37 @@ def DownloadAndProcessesItemJob(item):
         ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, downloadURL, ex)
         SaveAdnAppendToErrorLog(ErrorLog)
     
-
-    
-    # fname = itemObj['@id'].rsplit('/', 1)[-1]
-    # original_file_name = os.path.join(working_path, fname)
-    # local_download_file_name = os.path.join(
-    #     working_path, fname + ".download")
-    # local_temp_file_name = os.path.join(
-    #     working_path, fname + ".temp")
-    # # we will only download the index file, if .json and .temp both not available, this will he us avoid redownloading finished .temp files
-    # if (not os.path.exists(original_file_name) and not os.path.exists(local_temp_file_name)) or ForceReDownloadCatalogItems:
-    #     r = requests.get(itemObj['@id'], timeout=10)
-    #     with open(local_download_file_name, 'wb') as f:
-    #         # shutil.copyfileobj(r.content, f) # this method you can use it if request.get is used with stream=true and writing r.raw
-    #         f.write(r.content)
-    #     os.rename(local_download_file_name, local_temp_file_name)
-    # # if .temp file exists, means this file has to be appened for downlaoding its files in the next process
-    # if os.path.exists(local_temp_file_name):
-    #     # append temp name and original name
-    #     CatalogJsonFilesToProcess.append(
-    #         [local_temp_file_name, original_file_name])
-    
-
 def process_update(json_file):
     global CatalogJsonFilesToProcess
     with open(json_file, 'r') as jsonfile:
         jsonObj = json.loads(jsonfile.read()) # this may take really long time, for the first run
+        print(colored('Sorting out records, this may take some time...','red'))
+        results = jsonObj['results']
+        results_sorted = sorted(results, key=lambda k: k['seq']) 
+        print(colored('finished sorting','cyan'))
+        print (colored('Processing items in batches','green'))
+        starting_index = 0
+        Batch_Index = 0
+        All_records=len(results_sorted)
+        Total_Number_of_Batches = math.ceil(All_records/MaxItemsToProcess)
+        print (colored('Total Number of batches: %d'%(Total_Number_of_Batches),'cyan'))
+        while starting_index < All_records:
+            Total_To_Process = MaxItemsToProcess
+            if All_records - starting_index < MaxItemsToProcess:
+                Total_To_Process = All_records - starting_index
+                print (colored('Total to process less than Max Allowed, Changing total to: %d'% (Total_To_Process),'red'))
+            print (colored("Processing Batch with size of(%d) %d     of     %d")%(Total_To_Process,Batch_Index,Total_Number_of_Batches)   ,'green')
+            itemBatch = results_sorted[starting_index:starting_index+Total_To_Process]
+            pool = ThreadPool(processes=MaxItemsToProcess)
+            # got the below from: https://stackoverflow.com/questions/41920124/multiprocessing-use-tqdm-to-display-a-progress-bar/45276885
+            list(tqdm.tqdm(pool.imap(DownloadAndProcessesItemJob,
+                                    itemBatch), total=len(itemBatch), ))
 
-        # pbar = ProgressBar(maxval=len(jsonObj['items']))
-        print("Proccessing Change Feed...")
-        for item in jsonObj['results']:
-            packageFolderRoot = os.path.join(packages_path,item['id'])
-            packageFolderTar = os.path.join(packageFolderRoot,"-")
-            rev_file = os.path.join(packageFolderRoot,"__rev")
-            item_rev=item['changes'][0]['rev'].strip()
-            # check if the package is deleted, so we delete it from our side as well
-            if 'deleted' in jsonObj:
-                if item['deleted']==True:
-                    if os.path.exists(packageFolderRoot):
-                        shutil.rmtree(packageFolderRoot)
-                    continue # skip this item
-            os.makedirs(packageFolderTar,exist_ok=True) # this will make all folders required, including "-" which is used to store the tar balls
-            # we will store a file indicating latest revision we processed
-            CurrentRev=None
-            # ShouldProcess=False
-            if os.path.exists(rev_file):
-                with open (rev_file,'r') as f:
-                    CurrentRev=f.readline().strip()
-            if CurrentRev:
-                if CurrentRev==item_rev:
-                    print(colored("package '%s' with same rev %s number, will be skipped"%(item['id'],item_rev),'red'))
-                    continue
-            CatalogJsonFilesToProcess.append(item)
-            # 
-        # print (len(CatalogJsonFilesToProcess))
-        # exit(1)
-        pool = ThreadPool(processes=MaxItemsToProcess)
-        # got the below from: https://stackoverflow.com/questions/41920124/multiprocessing-use-tqdm-to-display-a-progress-bar/45276885
-        list(tqdm.tqdm(pool.imap(DownloadAndProcessesItemJob,
-                                 CatalogJsonFilesToProcess), total=len(CatalogJsonFilesToProcess), ))
-
-        pool.close()
-        pool.join()
-        UpdateLastSeqFile(str(jsonObj['last_seq']))
+            pool.close()
+            pool.join()
+            starting_index += Total_To_Process
+            Batch_Index += 1
+            UpdateLastSeqFile(itemBatch[-1]['seq']) # last item sequence number in batch
+        return 
         print(colored('Done :)','cyan'))
 
