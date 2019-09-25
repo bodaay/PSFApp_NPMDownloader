@@ -128,7 +128,7 @@ def start(argv):
     if os.path.exists(local_temp_file_name):
         os.remove(local_temp_file_name)
     r = requests.get(SkimDB_Main_Registry_Link + ChangesFeedURLSuffix, stream=True)
-    block_size = 1024*8
+    block_size = 1024*512
     wrote = 0 
     print ("Last Proccessed Squence: %s  out of %s  \n"%(colored(LatestSeq,'cyan'),colored(str(statsJson['committed_update_seq']),'red')))
     with open(local_temp_file_name, 'wb') as f:
