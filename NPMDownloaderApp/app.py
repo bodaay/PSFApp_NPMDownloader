@@ -9,6 +9,7 @@ import time
 import signal
 import base64
 import codecs
+import urllib.parse
 from datetime import datetime
 # I'm using thead pool, because its easier and I can use global variables easily with it, We don't need high processing power for this project, just multi thread
 from multiprocessing.pool import ThreadPool
@@ -17,8 +18,7 @@ from zipfile import ZipFile
 import tqdm  # pip3 install tqdm
 import re
 
-MaxDownloadTaks = 30
-ForceReDownloadCatalogItems = False
+MaxItemsToProcess = 30
 ROOT_FOLDER_NAME = "z:/NPM/"
 SkimDB_Main_Registry_Link = "https://skimdb.npmjs.com/registry/"
 working_path = os.path.join(ROOT_FOLDER_NAME,"sync_data_indexes")
@@ -111,23 +111,23 @@ def start(argv):
     if not os.path.exists(logfile_path):
         os.makedirs(logfile_path, exist_ok=True)
     
-    # if not os.path.exists(packages_data_path):
-    #     os.makedirs(packages_data_path, exist_ok=True)
-    
-
     print ("Connecting to SkimDB to get latest Stats...")
     r = requests.get(SkimDB_Main_Registry_Link, timeout=600)
     statsJson = json.loads(r.content)
-    print(statsJson)
+    # print(statsJson)
     print ("Total Number of packages: "+ colored(str(statsJson['doc_count']),'red'))
-    LatestSeq = "3010000"
+    LatestSeq = "0"
     if os.path.exists(LastSeqFile):
         with open(LastSeqFile,'r') as ls:
             LatestSeq=  ls.readline()
+    if LatestSeq == str(statsJson['committed_update_seq']):
+        print (colored('No Updates since latest run, nothing to do...Bye','red'))
     ChangesFeedURLSuffix="_changes?feed=normal&style=all_docs&since=" + LatestSeq
     local_temp_file_name = os.path.join(working_path, "changesfeed.temp.json")
+    if os.path.exists(local_temp_file_name):
+        os.remove(local_temp_file_name)
     r = requests.get(SkimDB_Main_Registry_Link + ChangesFeedURLSuffix, stream=True)
-    block_size = 2048
+    block_size = 1024*8
     wrote = 0 
     print ("Last Proccessed Squence: %s  out of %s  \n"%(colored(LatestSeq,'cyan'),colored(str(statsJson['committed_update_seq']),'red')))
     with open(local_temp_file_name, 'wb') as f:
@@ -137,21 +137,15 @@ def start(argv):
                 f.write(data)
                 sys.stdout.write("Total Downloaded: "+ colored("%s"%humanbytes(wrote),'cyan') +"     \r")
                 # sys.stdout.flush()
-    exit(1)
+    if wrote>0:
+        sys.stdout.write("Total Downloaded: "+ colored("%s"%humanbytes(wrote),'cyan') +"     \r")
+        print("")
+    # test only
+    # UpdateLastSeqFile(str(statsJson['committed_update_seq'])) # delete me later, we should do this at very late stage
+
+
     
-    original_file_name = os.path.join(working_path, "changes.json")
-    if FilesMatching(original_file_name, local_temp_file_name):
-        print("No update happened since last download, aborting...")
-        # return # Uncomment this later
-
-    # make index.temp.json as index.json
-
-
-    if os.path.exists(original_file_name):
-        os.remove(original_file_name)
-    os.rename(local_temp_file_name, original_file_name)
-    # exit(1)
-    process_update(original_file_name)
+    process_update(local_temp_file_name)
     # # delete index.temp.json
 
     # os.remove(local_temp_file_name)
@@ -165,11 +159,17 @@ def start(argv):
 
 CatalogJsonFilesToProcess = []
 
+def WriteTextFile(filename,data):
+    with open (filename,'w') as f:
+        f.writelines(data)
 
 def SaveAdnAppendToErrorLog(data):
     # timeS = datetime.now().strftime('FailedList__%H_%M_%d_%m_%Y.log.json')
-    with open(logFileName, "a+") as outfile:
-        outfile.write(data)
+    try:
+        with open(logFileName, "a+") as outfile:
+            outfile.write(data)
+    except Exception as ex:
+        print (ex)
 
 
 def signal_handler(sig, frame):
@@ -180,112 +180,109 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 
-def processCatalogPageItem(item):
-    downloadURL = ""
+
+def DownloadAndProcessesItemJob(item):
+    package_name= item['id']
+    packageFolderRoot = os.path.join(packages_path,item['id'])
+    packageFolderTar = os.path.join(packageFolderRoot,"-")
+    rev_file = os.path.join(packageFolderRoot,"__rev")
+    item_rev=item['changes'][0]['rev'].strip()
+    package_name_url_safe = urllib.parse.quote(package_name, safe='')
+    json_index_file = os.path.join(packageFolderRoot,"index.json")
+    # first we need to download the json file and name it as index.json
     try:
-        # r = requests.get(item['@id'], timeout=10)
-        # jsonObj = json.loads(r.content)
-        packgeName = item['nuget:id']
-        packgeVersion = item['nuget:version']
-        packageDownloadPath = os.path.join(
-            packages_path, packgeName, packgeVersion)
-        os.makedirs(packageDownloadPath, exist_ok=True)
-        downloadURL = NuGet_Main_Packages_Path + packgeName + "/" + packgeVersion + "/" #+ packgeName.lower() + "." + packgeVersion.lower() + ".nupkg"
-        # print (downloadURL)
-        packageDownloadFileName = packgeName.lower(
-        ) + "." + packgeVersion.lower() + ".nupkg"
-        packageDownloadFileName_WithPath = os.path.join(
-            packageDownloadPath, packageDownloadFileName)
-        os.makedirs(packageDownloadPath, exist_ok=True)
-        r = requests.get(downloadURL, timeout=10)
-        content = r.content
-        # store the original binary nupkg file
-        with open(packageDownloadFileName_WithPath, 'wb') as f:
-            f.write(content)
-        # extract the xml file nuspec
-        with ZipFile(packageDownloadFileName_WithPath, 'r') as zipObj:
-            zipObj.extract(packgeName + ".nuspec", path=packageDownloadPath, pwd=None)
-        fileHashAlgo = "sha512"
-        calculatedHash = ChechHash(fileHashAlgo, packageDownloadFileName_WithPath)
-        hashfilename = packageDownloadFileName_WithPath + "." + fileHashAlgo
-        with open(hashfilename,'w') as hashfile:
-            hashfile.write(base64.b64encode(bytes.fromhex(calculatedHash)).decode('utf-8'))
-                # # we have to verify the hash of the file
-                # fileHash = base64.b64decode(jsonObj['packageHash']).hex()
-                # fileHashAlgo = jsonObj['packageHashAlgorithm']
-                # calculatedHash = ChechHash(
-                #     fileHashAlgo, packageDownloadFileName_WithPath)
-                # if not calculatedHash == fileHash:
-                #     a = packageDownloadFileName_WithPath + "\n"
-                #     b = jsonObj['packageHash'] + "\n"
-                #     c = "Actual Hash: %s\n" % fileHash
-                #     d = "Calculated Hash: %s\n" % calculatedHash
-                #     z = a+b+c+d
-                #     raise Exception('Hash Mismatch\n' + z)
-            # os.rename(fullFileNameWithPath_temp, fullFileNameWithPath)
-
+        #write json index file
+        downloadURL = SkimDB_Main_Registry_Link + package_name_url_safe
+        r = requests.get(downloadURL,timeout=20)
+        json_raw=r.content
+        with open(json_index_file, 'wb') as f:
+            f.write(json_raw)
+        jsonObj = json.loads(json_raw)
+        # now we will download all tar balls
+        AllGood = True
+        versions_dict = jsonObj['versions']
+        for k in versions_dict:
+            try:
+                tarBallDownloadLink = versions_dict[k]['dist']['tarball']
+                r = requests.get(tarBallDownloadLink, stream=True)
+                block_size = 1024*8
+                fname = tarBallDownloadLink.rsplit('/', 1)[-1]
+                tarBallLocalFile=os.path.join(packageFolderTar,fname)
+                with open(tarBallLocalFile, 'wb') as f:
+                    for data in r.iter_content(block_size):
+                        f.write(data)
+            except Exception as ex:
+                AllGood = False
+                ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, tarBallDownloadLink, ex)
+                SaveAdnAppendToErrorLog(ErrorLog)
+        if AllGood: # if all good, write the rev file, so we will never process this sequence again, unless its updated
+            WriteTextFile(rev_file,item_rev)
     except Exception as ex:
-        ErrorLog = "%s\n%s\n%s" % (item['@id'], downloadURL, ex)
-        # raise Exception()
+        ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, downloadURL, ex)
         SaveAdnAppendToErrorLog(ErrorLog)
+    
 
-
-def DownloadAndProcessesItemJob(itemObj):
-    global CatalogJsonFilesToProcess
-    fname = itemObj['@id'].rsplit('/', 1)[-1]
-    original_file_name = os.path.join(working_path, fname)
-    local_download_file_name = os.path.join(
-        working_path, fname + ".download")
-    local_temp_file_name = os.path.join(
-        working_path, fname + ".temp")
-    # we will only download the index file, if .json and .temp both not available, this will he us avoid redownloading finished .temp files
-    if (not os.path.exists(original_file_name) and not os.path.exists(local_temp_file_name)) or ForceReDownloadCatalogItems:
-        r = requests.get(itemObj['@id'], timeout=10)
-        with open(local_download_file_name, 'wb') as f:
-            # shutil.copyfileobj(r.content, f) # this method you can use it if request.get is used with stream=true and writing r.raw
-            f.write(r.content)
-        os.rename(local_download_file_name, local_temp_file_name)
-    # if .temp file exists, means this file has to be appened for downlaoding its files in the next process
-    if os.path.exists(local_temp_file_name):
-        # append temp name and original name
-        CatalogJsonFilesToProcess.append(
-            [local_temp_file_name, original_file_name])
-
+    
+    # fname = itemObj['@id'].rsplit('/', 1)[-1]
+    # original_file_name = os.path.join(working_path, fname)
+    # local_download_file_name = os.path.join(
+    #     working_path, fname + ".download")
+    # local_temp_file_name = os.path.join(
+    #     working_path, fname + ".temp")
+    # # we will only download the index file, if .json and .temp both not available, this will he us avoid redownloading finished .temp files
+    # if (not os.path.exists(original_file_name) and not os.path.exists(local_temp_file_name)) or ForceReDownloadCatalogItems:
+    #     r = requests.get(itemObj['@id'], timeout=10)
+    #     with open(local_download_file_name, 'wb') as f:
+    #         # shutil.copyfileobj(r.content, f) # this method you can use it if request.get is used with stream=true and writing r.raw
+    #         f.write(r.content)
+    #     os.rename(local_download_file_name, local_temp_file_name)
+    # # if .temp file exists, means this file has to be appened for downlaoding its files in the next process
+    # if os.path.exists(local_temp_file_name):
+    #     # append temp name and original name
+    #     CatalogJsonFilesToProcess.append(
+    #         [local_temp_file_name, original_file_name])
+    
 
 def process_update(json_file):
     global CatalogJsonFilesToProcess
     with open(json_file, 'r') as jsonfile:
-        jsonObj = json.loads(jsonfile.read())
+        jsonObj = json.loads(jsonfile.read()) # this may take really long time, for the first run
+
         # pbar = ProgressBar(maxval=len(jsonObj['items']))
-        print("Downloading Catalogs...")
-        pool = ThreadPool(processes=MaxDownloadTaks)
+        print("Proccessing Change Feed...")
+        for item in jsonObj['results']:
+            packageFolderRoot = os.path.join(packages_path,item['id'])
+            packageFolderTar = os.path.join(packageFolderRoot,"-")
+            rev_file = os.path.join(packageFolderRoot,"__rev")
+            item_rev=item['changes'][0]['rev'].strip()
+            # check if the package is deleted, so we delete it from our side as well
+            if 'deleted' in jsonObj:
+                if item['deleted']==True:
+                    if os.path.exists(packageFolderRoot):
+                        shutil.rmtree(packageFolderRoot)
+                    continue # skip this item
+            os.makedirs(packageFolderTar,exist_ok=True) # this will make all folders required, including "-" which is used to store the tar balls
+            # we will store a file indicating latest revision we processed
+            CurrentRev=None
+            # ShouldProcess=False
+            if os.path.exists(rev_file):
+                with open (rev_file,'r') as f:
+                    CurrentRev=f.readline().strip()
+            if CurrentRev:
+                if CurrentRev==item_rev:
+                    print(colored("package '%s' with same rev %s number, will be skipped"%(item['id'],item_rev),'red'))
+                    continue
+            CatalogJsonFilesToProcess.append(item)
+            # 
+        # print (len(CatalogJsonFilesToProcess))
+        # exit(1)
+        pool = ThreadPool(processes=MaxItemsToProcess)
         # got the below from: https://stackoverflow.com/questions/41920124/multiprocessing-use-tqdm-to-display-a-progress-bar/45276885
         list(tqdm.tqdm(pool.imap(DownloadAndProcessesItemJob,
-                                 jsonObj['items']), total=len(jsonObj['items']), ))
+                                 CatalogJsonFilesToProcess), total=len(CatalogJsonFilesToProcess), ))
+
         pool.close()
         pool.join()
-        print("Processing New Catalog Pacakges...")
-        index = 0
-        jsonObj = None
-        for cat_temp_name, cat_ori_name in CatalogJsonFilesToProcess:
-            try:
-                print("Processing Catalog (%s), %d/%d Finished" %
-                      (cat_temp_name, index, len(CatalogJsonFilesToProcess)))
-                with open(cat_temp_name, 'r') as jsonfile:
-                    jsonObj = json.loads(jsonfile.read())
-                    catalogpool = ThreadPool(processes=MaxDownloadTaks)
-                    list(tqdm.tqdm(catalogpool.imap(processCatalogPageItem,
-                                                    jsonObj['items']), total=len(jsonObj['items']), ))
-                    catalogpool.close()
-                    catalogpool.join()
-                    
-                    # Now we can say we can change this Catalog file name, and remove the .temp since its already processed
-            except Exception as ex:
-                print(ex)
-                ErrorLog = "****\nError in File: %s\n%s\n" % (cat_ori_name, ex)
-                SaveAdnAppendToErrorLog(ErrorLog)
-
-            finally:
-                os.rename(cat_temp_name, cat_ori_name)
-                index += 1
+        UpdateLastSeqFile(str(jsonObj['last_seq']))
+        print(colored('Done :)','cyan'))
 
