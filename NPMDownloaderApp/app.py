@@ -269,6 +269,6 @@ def process_update(json_file):
             starting_index += Total_To_Process
             Batch_Index += 1
             UpdateLastSeqFile(itemBatch[-1]['seq']) # last item sequence number in batch
-        return 
+         
         print(colored('Done :)','cyan'))
 
