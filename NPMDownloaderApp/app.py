@@ -261,7 +261,7 @@ def process_update(json_file):
             if All_records - starting_index < MaxItemsToProcess:
                 Total_To_Process = All_records - starting_index
                 print (colored('Total to process less than Max Allowed, Changing total to: %d'% (Total_To_Process),'red'))
-            print (colored("Processing Batch with size of(%d) %d     of     %d")%(Total_To_Process,Batch_Index,Total_Number_of_Batches)   ,'green')
+            print (colored("Processing Batch %d     of     %d"%(Batch_Index,Total_Number_of_Batches)   ,'green'))
             itemBatch = results_sorted[starting_index:starting_index+Total_To_Process]
             pool = ThreadPool(processes=MaxItemsToProcess)
             # got the below from: https://stackoverflow.com/questions/41920124/multiprocessing-use-tqdm-to-display-a-progress-bar/45276885
