@@ -221,7 +221,6 @@ def DownloadAndProcessesItemJob(item):
         for k in versions_dict:
             try:
                 tarBallDownloadLink = versions_dict[k]['dist']['tarball']
-                print (tarBallDownloadLink)
                 r = requests.get(tarBallDownloadLink, stream=True)
                 block_size = 1024*8
                 fname = tarBallDownloadLink.rsplit('/', 1)[-1]
