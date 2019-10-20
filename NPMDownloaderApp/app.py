@@ -11,7 +11,7 @@ import base64
 import codecs
 import math
 import urllib.parse
-import numpy as np
+import numpy as np # pip3 install numpy
 from datetime import datetime
 # I'm using thead pool, because its easier and I can use global variables easily with it, We don't need high processing power for this project, just multi thread
 from multiprocessing.pool import ThreadPool
