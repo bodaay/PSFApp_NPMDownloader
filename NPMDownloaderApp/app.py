@@ -257,7 +257,7 @@ def GetStartingIndexForSorted(json_array,requriedValue):
     listofseqs.sort()
     array = np.asarray(listofseqs)
     value = int(requriedValue,10)
-    idx = (np.abs(array - value)).argmin()
+    idx = (np.abs(array - value)).argmin() # the reason I'm doing all of this, because there is a slight chance that the lastseq we are looking for no longer available, since it has been remove and replace by future seq. so we will take the one lower
     print ("Closest index found is: %s with value of: %s" %(colored(idx,'red'),colored(listofseqs[idx],'red'))  )
     return idx
     
@@ -270,8 +270,8 @@ def process_update(json_file,lastseq):
         results_sorted = sorted(results, key=lambda k: k['seq'])
         print(colored('finished sorting','cyan'))
         print (colored('Processing items in batches','green'))
-        results_sorted_from_lastseq = results_sorted[GetStartingIndexForSorted(results_sorted,lastseq):]
         print ("Last Proccessed Squence: %s  out of %s  \n"%(colored(lastseq,'cyan'),colored(jsonObj['last_seq'],'red'))  )
+        results_sorted_from_lastseq = results_sorted[GetStartingIndexForSorted(results_sorted,"2105922"):]
         starting_index = 0
         Batch_Index = 0
         All_records=len(results_sorted_from_lastseq)
