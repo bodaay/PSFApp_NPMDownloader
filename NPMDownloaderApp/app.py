@@ -252,8 +252,7 @@ def DownloadAndProcessesItemJob(item):
 def GetStartingIndexForSorted(json_array,requriedValue):
     index = 0
     for i in json_array:
-        print (i)
-        if i['seq'] == requriedValue:
+        if i['seq'] == int(requriedValue,10):
             return index
         index += 1
     exit ("Could not find required index %d" % requriedValue)
