@@ -11,6 +11,7 @@ import base64
 import codecs
 import math
 import urllib.parse
+import numpy as np
 from datetime import datetime
 # I'm using thead pool, because its easier and I can use global variables easily with it, We don't need high processing power for this project, just multi thread
 from multiprocessing.pool import ThreadPool
@@ -250,13 +251,16 @@ def DownloadAndProcessesItemJob(item):
         SaveAdnAppendToErrorLog(ErrorLog)
     
 def GetStartingIndexForSorted(json_array,requriedValue):
-    index = 0
+    listofseqs = []
     for i in json_array:
-        if i['seq'] == int(requriedValue,10):
-            return index
-        index += 1
-    exit ("Could not find required index %d" % requriedValue)
-    #TODO: imporve this function that it may return closest value 
+        listofseqs.append(i['seq'])
+    listofseqs.sort()
+    array = np.asarray(listofseqs)
+    value = int(requriedValue,10)
+    idx = (np.abs(array - value)).argmin()
+    print ("Closest index found is: %s with value of: %s" %(colored(idx,'red'),colored(listofseqs[idx],'red'))  )
+    return idx
+    
 def process_update(json_file,lastseq):
     global CatalogJsonFilesToProcess
     with open(json_file, 'r') as jsonfile:
