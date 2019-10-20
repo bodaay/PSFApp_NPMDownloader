@@ -128,7 +128,7 @@ def start(argv):
     if os.path.exists(local_temp_file_name):
         os.remove(local_temp_file_name)
     link = SkimDB_Main_Registry_Link + ChangesFeedURLSuffix
-    print ("SkimDB Download Link: %s" %(colored(link,'green')))
+    print ("To Get Latest SkimDB updates, use this Download Link: %s" %(colored(link,'green')))
     r = requests.get(link, stream=True)
     block_size = 512 * 1024
     wrote = 0 
@@ -137,7 +137,7 @@ def start(argv):
     if os.path.exists(local_temp_file_name):
         shutil.copyfile(local_temp_file_name,local_temp_file_name+"_md5_"+GetMD5(local_temp_file_name)+".json")
     else:
-        print (colored("I'm not downloading SkimDB _changes.json file, download it yourself from the link I provided, and paste the file into: %s" %(local_temp_file_name) ,'red'))
+        print (colored("I'm not downloading SkimDB _changes.json file, their connection is shit and unreliable, download it yourself from the link I provided, and paste the file into: %s" %(local_temp_file_name) ,'red'))
         exit (1)
     # with open(local_temp_file_name, 'wb') as f:
     #     for data in r.iter_content(block_size):
