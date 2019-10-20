@@ -20,7 +20,7 @@ from zipfile import ZipFile
 import tqdm  # pip3 install tqdm
 import re
 
-MaxItemsToProcess = 30
+MaxItemsToProcess = 40
 ROOT_FOLDER_NAME = "/Synology/NPM/"
 SkimDB_Main_Registry_Link = "https://skimdb.npmjs.com/registry/"
 working_path = os.path.join(ROOT_FOLDER_NAME,"sync_data_indexes")
