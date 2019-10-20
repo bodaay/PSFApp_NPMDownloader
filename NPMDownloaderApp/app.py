@@ -154,7 +154,7 @@ def start(argv):
 
 
     
-    process_update(local_temp_file_name)
+    process_update(local_temp_file_name,LatestSeq)
     # # delete index.temp.json
 
     # os.remove(local_temp_file_name)
@@ -250,18 +250,19 @@ def DownloadAndProcessesItemJob(item):
         ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, downloadURL, ex)
         SaveAdnAppendToErrorLog(ErrorLog)
     
-def process_update(json_file):
+def process_update(json_file,lastseq):
     global CatalogJsonFilesToProcess
     with open(json_file, 'r') as jsonfile:
         jsonObj = json.loads(jsonfile.read()) # this may take really long time, for the first run
         print(colored('Sorting out records, this may take some time...','red'))
         results = jsonObj['results']
-        results_sorted = sorted(results, key=lambda k: k['seq']) 
+        results_sorted = sorted(results, key=lambda k: k['seq'])
         print(colored('finished sorting','cyan'))
         print (colored('Processing items in batches','green'))
+        results_sorted_from_lastseq = results_sorted[results_sorted.index(lastseq):]
         starting_index = 0
         Batch_Index = 0
-        All_records=len(results_sorted)
+        All_records=len(results_sorted_from_lastseq)
         Total_Number_of_Batches = math.ceil(All_records/MaxItemsToProcess)
         print (colored('Total Number of batches: %d'%(Total_Number_of_Batches),'cyan'))
         while starting_index < All_records:
@@ -270,7 +271,7 @@ def process_update(json_file):
                 Total_To_Process = All_records - starting_index
                 print (colored('Total to process less than Max Allowed, Changing total to: %d'% (Total_To_Process),'red'))
             print (colored("Processing Batch %d     of     %d"%(Batch_Index,Total_Number_of_Batches)   ,'green'))
-            itemBatch = results_sorted[starting_index:starting_index+Total_To_Process]
+            itemBatch = results_sorted_from_lastseq[starting_index:starting_index+Total_To_Process]
             pool = ThreadPool(processes=MaxItemsToProcess)
             # got the below from: https://stackoverflow.com/questions/41920124/multiprocessing-use-tqdm-to-display-a-progress-bar/45276885
             list(tqdm.tqdm(pool.imap(DownloadAndProcessesItemJob,
