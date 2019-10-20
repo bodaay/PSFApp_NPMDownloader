@@ -137,7 +137,7 @@ def start(argv):
     if os.path.exists(local_temp_file_name):
         shutil.copyfile(local_temp_file_name,local_temp_file_name+"_md5_"+GetMD5(local_temp_file_name)+".json")
     else:
-        print (colored("I'm not downloading SkimDB _changes.json file, download it yourself from the link I provided, and paste the file into: %s" %(local_temp_file_name) ),'red')
+        print (colored("I'm not downloading SkimDB _changes.json file, download it yourself from the link I provided, and paste the file into: %s" %(local_temp_file_name) ,'red'))
         exit (1)
     # with open(local_temp_file_name, 'wb') as f:
     #     for data in r.iter_content(block_size):
