@@ -20,7 +20,7 @@ import tqdm  # pip3 install tqdm
 import re
 
 MaxItemsToProcess = 30
-ROOT_FOLDER_NAME = "e:/NPM/"
+ROOT_FOLDER_NAME = "/Synology/NPM/"
 SkimDB_Main_Registry_Link = "https://skimdb.npmjs.com/registry/"
 working_path = os.path.join(ROOT_FOLDER_NAME,"sync_data_indexes")
 packages_path = os.path.join(ROOT_FOLDER_NAME, "data")
@@ -127,8 +127,10 @@ def start(argv):
     local_temp_file_name = os.path.join(working_path, "changesfeed.temp.json")
     if os.path.exists(local_temp_file_name):
         os.remove(local_temp_file_name)
-    r = requests.get(SkimDB_Main_Registry_Link + ChangesFeedURLSuffix, stream=True)
-    block_size = 512
+    link = SkimDB_Main_Registry_Link + ChangesFeedURLSuffix
+    print ("SkimDB Download Link: %s" %(colored(link,'green')))
+    r = requests.get(link, stream=True)
+    block_size = 512 * 1024
     wrote = 0 
     print ("Last Proccessed Squence: %s  out of %s  \n"%(colored(LatestSeq,'cyan'),colored(str(statsJson['committed_update_seq']),'red')))
     with open(local_temp_file_name, 'wb') as f:
