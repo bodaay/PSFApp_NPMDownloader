@@ -272,6 +272,7 @@ def process_update(json_file,lastseq):
         print (colored('Processing items in batches','green'))
         print ("Last Proccessed Squence: %s  out of %s  \n"%(colored(lastseq,'cyan'),colored(jsonObj['last_seq'],'red'))  )
         results_sorted_from_lastseq = results_sorted[GetStartingIndexForSorted(results_sorted,"2105820"):]
+        return
         starting_index = 0
         Batch_Index = 0
         All_records=len(results_sorted_from_lastseq)
