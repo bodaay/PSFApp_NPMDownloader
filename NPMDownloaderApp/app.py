@@ -124,7 +124,7 @@ def start(argv):
     if LatestSeq == str(statsJson['committed_update_seq']):
         print (colored('No Updates since latest run, nothing to do...Bye','red'))
     ChangesFeedURLSuffix="_changes?feed=normal&style=all_docs&since=" + LatestSeq
-    local_temp_file_name = os.path.join(working_path, "changesfeed.temp.json")
+    local_temp_file_name = os.path.join(working_path, "_changes.json")
     if os.path.exists(local_temp_file_name):
         os.remove(local_temp_file_name)
     link = SkimDB_Main_Registry_Link + ChangesFeedURLSuffix
@@ -136,16 +136,19 @@ def start(argv):
     # make a backup of older file
     if os.path.exists(local_temp_file_name):
         shutil.copyfile(local_temp_file_name,local_temp_file_name+"_md5_"+GetMD5(local_temp_file_name)+".json")
-    with open(local_temp_file_name, 'wb') as f:
-        for data in r.iter_content(block_size):
-            if data:
-                wrote += len(data)
-                f.write(data)
-                sys.stdout.write("Total Downloaded: "+ colored("%s"%humanbytes(wrote),'cyan') +"     \r")
-                # sys.stdout.flush()
-    if wrote>0:
-        sys.stdout.write("Total Downloaded: "+ colored("%s"%humanbytes(wrote),'cyan') +"     \r")
-        print("")
+    else:
+        print (colored("I'm not downloading SkimDB _changes.json file, download it yourself from the link I provided, and paste the file into: %s" %(local_temp_file_name) ),'red')
+        exit (1)
+    # with open(local_temp_file_name, 'wb') as f:
+    #     for data in r.iter_content(block_size):
+    #         if data:
+    #             wrote += len(data)
+    #             f.write(data)
+    #             sys.stdout.write("Total Downloaded: "+ colored("%s"%humanbytes(wrote),'cyan') +"     \r")
+    #             # sys.stdout.flush()
+    # if wrote>0:
+    #     sys.stdout.write("Total Downloaded: "+ colored("%s"%humanbytes(wrote),'cyan') +"     \r")
+    #     print("")
     # test only
     # UpdateLastSeqFile(str(statsJson['committed_update_seq'])) # delete me later, we should do this at very late stage
 
