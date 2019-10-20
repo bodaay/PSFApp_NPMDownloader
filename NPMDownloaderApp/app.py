@@ -249,6 +249,13 @@ def DownloadAndProcessesItemJob(item):
         ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, downloadURL, ex)
         SaveAdnAppendToErrorLog(ErrorLog)
     
+def GetStartingIndexForSorted(json_array,requriedValue):
+    index = 0
+    for i in json_array:
+        if i['seq'] == requriedValue:
+            return index
+        index += 1
+    #TODO: imporve this function that it may return closest value 
 def process_update(json_file,lastseq):
     global CatalogJsonFilesToProcess
     with open(json_file, 'r') as jsonfile:
@@ -258,7 +265,7 @@ def process_update(json_file,lastseq):
         results_sorted = sorted(results, key=lambda k: k['seq'])
         print(colored('finished sorting','cyan'))
         print (colored('Processing items in batches','green'))
-        results_sorted_from_lastseq = results_sorted[results_sorted.index(lastseq):]
+        results_sorted_from_lastseq = results_sorted[GetStartingIndexForSorted(results_sorted,lastseq):]
         print ("Last Proccessed Squence: %s  out of %s  \n"%(colored(lastseq,'cyan'),colored(jsonObj['last_seq'],'red'))  )
         starting_index = 0
         Batch_Index = 0
