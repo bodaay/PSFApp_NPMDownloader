@@ -134,7 +134,8 @@ def start(argv):
     wrote = 0 
     print ("Last Proccessed Squence: %s  out of %s  \n"%(colored(LatestSeq,'cyan'),colored(str(statsJson['committed_update_seq']),'red')))
     # make a backup of older file
-    shutil.copyfile(local_temp_file_name,local_temp_file_name+"_md5_"+GetMD5(local_temp_file_name)+".json")
+    if os.path.exists(local_temp_file_name):
+        shutil.copyfile(local_temp_file_name,local_temp_file_name+"_md5_"+GetMD5(local_temp_file_name)+".json")
     with open(local_temp_file_name, 'wb') as f:
         for data in r.iter_content(block_size):
             if data:
