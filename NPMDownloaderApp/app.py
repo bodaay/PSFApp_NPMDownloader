@@ -252,10 +252,11 @@ def DownloadAndProcessesItemJob(item):
 def GetStartingIndexForSorted(json_array,requriedValue):
     index = 0
     for i in json_array:
+        print (i)
         if i['seq'] == requriedValue:
             return index
         index += 1
-    exit ("Could not find required index")
+    exit ("Could not find required index %d" % requriedValue)
     #TODO: imporve this function that it may return closest value 
 def process_update(json_file,lastseq):
     global CatalogJsonFilesToProcess
