@@ -255,6 +255,7 @@ def GetStartingIndexForSorted(json_array,requriedValue):
         if i['seq'] == requriedValue:
             return index
         index += 1
+    exit ("Could not find required index")
     #TODO: imporve this function that it may return closest value 
 def process_update(json_file,lastseq):
     global CatalogJsonFilesToProcess
