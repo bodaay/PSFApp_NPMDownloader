@@ -125,20 +125,19 @@ def start(argv):
         print (colored('No Updates since latest run, nothing to do...Bye','red'))
     ChangesFeedURLSuffix="_changes?feed=normal&style=all_docs&since=" + LatestSeq
     local_temp_file_name = os.path.join(working_path, "_changes.json")
-    if os.path.exists(local_temp_file_name):
-        os.remove(local_temp_file_name)
-    link = SkimDB_Main_Registry_Link + ChangesFeedURLSuffix
-    print ("To Get Latest SkimDB updates, use this Download Link: %s" %(colored(link,'green')))
-    r = requests.get(link, stream=True)
-    block_size = 512 * 1024
-    wrote = 0 
-    print ("Last Proccessed Squence: %s  out of %s  \n"%(colored(LatestSeq,'cyan'),colored(str(statsJson['committed_update_seq']),'red')))
     # make a backup of older file
     if os.path.exists(local_temp_file_name):
         shutil.copyfile(local_temp_file_name,local_temp_file_name+"_md5_"+GetMD5(local_temp_file_name)+".json")
     else:
         print (colored("I'm not downloading SkimDB _changes.json file, their connection is shit and unreliable, download it yourself from the link I provided, and paste the file into: %s" %(local_temp_file_name) ,'red'))
         exit (1)
+    link = SkimDB_Main_Registry_Link + ChangesFeedURLSuffix
+    print ("To Get Latest SkimDB updates, use this Download Link: %s" %(colored(link,'green')))
+    # r = requests.get(link, stream=True)
+    # block_size = 512 * 1024
+    # wrote = 0 
+    
+    
     # with open(local_temp_file_name, 'wb') as f:
     #     for data in r.iter_content(block_size):
     #         if data:
@@ -260,6 +259,7 @@ def process_update(json_file,lastseq):
         print(colored('finished sorting','cyan'))
         print (colored('Processing items in batches','green'))
         results_sorted_from_lastseq = results_sorted[results_sorted.index(lastseq):]
+        print ("Last Proccessed Squence: %s  out of %s  \n"%(colored(lastseq,'cyan'),colored(jsonObj['last_seq'],'red'))  )
         starting_index = 0
         Batch_Index = 0
         All_records=len(results_sorted_from_lastseq)
