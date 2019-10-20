@@ -127,12 +127,20 @@ def start(argv):
     local_temp_file_name = os.path.join(working_path, "changesfeed.temp.json")
     if os.path.exists(local_temp_file_name):
         os.remove(local_temp_file_name)
-    r = requests.get(SkimDB_Main_Registry_Link + ChangesFeedURLSuffix)
+    r = requests.get(SkimDB_Main_Registry_Link + ChangesFeedURLSuffix, stream=True)
+    block_size = 512
+    wrote = 0 
     print ("Last Proccessed Squence: %s  out of %s  \n"%(colored(LatestSeq,'cyan'),colored(str(statsJson['committed_update_seq']),'red')))
     with open(local_temp_file_name, 'wb') as f:
-        data=r.content
-        f.write(data)
-        print("Total Downloaded: "+ colored("%s"%humanbytes(len(data)),'cyan') +"     \r")
+        for data in r.iter_content(block_size):
+            if data:
+                wrote += len(data)
+                f.write(data)
+                sys.stdout.write("Total Downloaded: "+ colored("%s"%humanbytes(wrote),'cyan') +"     \r")
+                # sys.stdout.flush()
+    if wrote>0:
+        sys.stdout.write("Total Downloaded: "+ colored("%s"%humanbytes(wrote),'cyan') +"     \r")
+        print("")
     # test only
     # UpdateLastSeqFile(str(statsJson['committed_update_seq'])) # delete me later, we should do this at very late stage
 
