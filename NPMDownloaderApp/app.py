@@ -181,9 +181,13 @@ def SaveAdnAppendToErrorLog(data):
     except Exception as ex:
         print (ex)
 
+ProcessPools = []
 
 def signal_handler(sig, frame):
     print('\nYou pressed Ctrl+C!')
+    print('\nTerminating All Processes')
+    for p in ProcessPools:
+        p.termincate()
     sys.exit(0)
 
 
@@ -286,13 +290,13 @@ def process_update(json_file,lastseq):
                 print (colored('Total to process less than Max Allowed, Changing total to: %d'% (Total_To_Process),'red'))
             print (colored("Processing Batch %d     of     %d"%(Batch_Index,Total_Number_of_Batches)   ,'green'))
             itemBatch = results_sorted_from_lastseq[starting_index:starting_index+Total_To_Process]
-            pool = Pool(processes=MaxItemsToProcess)
+            ProcessPools = Pool(processes=MaxItemsToProcess)
             # got the below from: https://stackoverflow.com/questions/41920124/multiprocessing-use-tqdm-to-display-a-progress-bar/45276885
-            list(tqdm.tqdm(pool.imap(DownloadAndProcessesItemJob,
+            list(tqdm.tqdm(ProcessPools.imap(DownloadAndProcessesItemJob,
                                     itemBatch), total=len(itemBatch), ))
 
-            pool.close()
-            pool.join()
+            ProcessPools.close()
+            ProcessPools.join()
             starting_index += Total_To_Process
             Batch_Index += 1
             UpdateLastSeqFile(itemBatch[-1]['seq']) # last item sequence number in batch
