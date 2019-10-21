@@ -293,7 +293,7 @@ def process_update(json_file,lastseq):
             itemBatch = results_sorted_from_lastseq[starting_index:starting_index+Total_To_Process]
             ProcessPools = Pool(processes=MaxItemsToProcess)
             # got the below from: https://stackoverflow.com/questions/41920124/multiprocessing-use-tqdm-to-display-a-progress-bar/45276885
-            list(tqdm.tqdm(ProcessPools.imap(DownloadAndProcessesItemJob,
+            list(tqdm.tqdm(ProcessPools.imap_unordered(DownloadAndProcessesItemJob,
                                     itemBatch), total=len(itemBatch), ))
 
             ProcessPools.close()
