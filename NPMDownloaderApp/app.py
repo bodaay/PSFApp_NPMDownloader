@@ -283,13 +283,13 @@ def process_update(json_file,lastseq):
         Batch_Index = 0
         All_records=len(results_sorted_from_lastseq)
         Total_Number_of_Batches = math.ceil(All_records/MaxItemsToProcess)
-        print (colored('Total Number of batches: %d'%(Total_Number_of_Batches),'cyan'))
+        print (colored('Total Number of batches: %d with %d packages for each batch'%(Total_Number_of_Batches,MaxItemsToProcess),'cyan'))
         while starting_index < All_records:
             Total_To_Process = MaxItemsToProcess
             if All_records - starting_index < MaxItemsToProcess:
                 Total_To_Process = All_records - starting_index
                 print (colored('Total to process less than Max Allowed, Changing total to: %d'% (Total_To_Process),'red'))
-            print (colored("Processing Batch %d     of     %d"%(Batch_Index,Total_Number_of_Batches)   ,'green'))
+            print (colored("Processing Batch %d     of     %d"%(Batch_Index + 1,Total_Number_of_Batches)   ,'green'))
             itemBatch = results_sorted_from_lastseq[starting_index:starting_index+Total_To_Process]
             ProcessPools = Pool(processes=MaxItemsToProcess)
             # got the below from: https://stackoverflow.com/questions/41920124/multiprocessing-use-tqdm-to-display-a-progress-bar/45276885
