@@ -267,6 +267,7 @@ def GetStartingIndexForSorted(json_array,requriedValue):
     return idx
     
 def process_update(json_file,lastseq):
+    global ProcessPools
     with open(json_file, 'r') as jsonfile:
         jsonObj = json.loads(jsonfile.read()) # this may take really long time, for the first run
         print(colored('Sorting out records, this may take some time...','red'))
