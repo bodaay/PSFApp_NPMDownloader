@@ -14,7 +14,7 @@ import urllib.parse
 import numpy as np # pip3 install numpy
 from datetime import datetime
 # I'm using thead pool, because its easier and I can use global variables easily with it, We don't need high processing power for this project, just multi thread
-from multiprocessing.pool import ThreadPool
+from multiprocessing.pool import Pool
 from termcolor import colored
 from zipfile import ZipFile
 import tqdm  # pip3 install tqdm
@@ -168,7 +168,6 @@ def start(argv):
 
 # lock = Lock()
 
-CatalogJsonFilesToProcess = []
 
 def WriteTextFile(filename,data):
     with open (filename,'w') as f:
@@ -264,7 +263,6 @@ def GetStartingIndexForSorted(json_array,requriedValue):
     return idx
     
 def process_update(json_file,lastseq):
-    global CatalogJsonFilesToProcess
     with open(json_file, 'r') as jsonfile:
         jsonObj = json.loads(jsonfile.read()) # this may take really long time, for the first run
         print(colored('Sorting out records, this may take some time...','red'))
@@ -288,7 +286,7 @@ def process_update(json_file,lastseq):
                 print (colored('Total to process less than Max Allowed, Changing total to: %d'% (Total_To_Process),'red'))
             print (colored("Processing Batch %d     of     %d"%(Batch_Index,Total_Number_of_Batches)   ,'green'))
             itemBatch = results_sorted_from_lastseq[starting_index:starting_index+Total_To_Process]
-            pool = ThreadPool(processes=MaxItemsToProcess)
+            pool = Pool(processes=MaxItemsToProcess)
             # got the below from: https://stackoverflow.com/questions/41920124/multiprocessing-use-tqdm-to-display-a-progress-bar/45276885
             list(tqdm.tqdm(pool.imap(DownloadAndProcessesItemJob,
                                     itemBatch), total=len(itemBatch), ))
