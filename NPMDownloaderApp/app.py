@@ -291,6 +291,12 @@ def process_update(json_file,lastseq):
                 print (colored('Total to process less than Max Allowed, Changing total to: %d'% (Total_To_Process),'red'))
             print (colored("Processing Batch %d     of     %d"%(Batch_Index + 1,Total_Number_of_Batches)   ,'green'))
             itemBatch = results_sorted_from_lastseq[starting_index:starting_index+Total_To_Process]
+            packagesProcessString= "["
+            for i in itemBatch:
+                packagesProcessString += i['id'] + ","
+            packagesProcessString = packagesProcessString[:-1]
+            packagesProcessString += "]"
+            print (colored(packagesProcessString,'blue'))
             ProcessPools = Pool(processes=MaxItemsToProcess)
             # got the below from: https://stackoverflow.com/questions/41920124/multiprocessing-use-tqdm-to-display-a-progress-bar/45276885
             list(tqdm.tqdm(ProcessPools.imap_unordered(DownloadAndProcessesItemJob,
