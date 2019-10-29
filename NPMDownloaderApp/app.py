@@ -19,10 +19,11 @@ from termcolor import colored
 from zipfile import ZipFile
 import tqdm  # pip3 install tqdm
 import re
-
+ 
 #TODO: we should keep downloading _changes.json weekly, and host this somewhere else. I cannot download it myself. I'm thinking of create a lambda function on aws and hosting the file on aws s3, I'll do this later, too lazy to do it now
 
-MaxItemsToProcess = 40
+BatchSize = 40
+MaxDownloadProcess = 40
 ROOT_FOLDER_NAME = "/Synology/NPM/"
 SkimDB_Main_Registry_Link = "https://skimdb.npmjs.com/registry/"
 working_path = os.path.join(ROOT_FOLDER_NAME,"sync_data_indexes")
@@ -194,6 +195,22 @@ def signal_handler(sig, frame):
 signal.signal(signal.SIGINT, signal_handler)
 
 
+def DownloadTar(package):
+    AllGood = True
+    Error = None
+    try:
+        tarBallDownloadLink = package['link']
+        r = requests.get(tarBallDownloadLink, timeout=600)
+        fname = tarBallDownloadLink.rsplit('/', 1)[-1]
+        tarBallLocalFile=os.path.join(package['downloadPath'],fname)
+        with open(tarBallLocalFile, 'wb') as f:
+            f.write(r.content)
+    except Exception as ex:
+        AllGood = False
+        #ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, tarBallDownloadLink, ex)
+        Error = ex
+        # SaveAdnAppendToErrorLog(ErrorLog)
+    return AllGood,Error
 
 def DownloadAndProcessesItemJob(item):
     package_name= item['id']
@@ -235,22 +252,24 @@ def DownloadAndProcessesItemJob(item):
             f.write(json_raw)
         jsonObj = json.loads(json_raw)
         # now we will download all tar balls
-        AllGood = True
+        tars_to_download = []
         versions_dict = jsonObj['versions']
         for k in versions_dict:
-            try:
-                tarBallDownloadLink = versions_dict[k]['dist']['tarball']
-                r = requests.get(tarBallDownloadLink, timeout=600)
-                fname = tarBallDownloadLink.rsplit('/', 1)[-1]
-                tarBallLocalFile=os.path.join(packageFolderTar,fname)
-                with open(tarBallLocalFile, 'wb') as f:
-                    f.write(r.content)
-            except Exception as ex:
-                AllGood = False
-                ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, tarBallDownloadLink, ex)
+            tarBallDownloadLink = versions_dict[k]['dist']['tarball']
+            package = {"link": tarBallDownloadLink,"downloadPath":packageFolderTar}
+            tars_to_download.append(package)
+        DownloadPool = Pool(processes=MaxDownloadProcess)
+        results = DownloadPool.imap(DownloadTar,tars_to_download)
+        DownloadPool.close()
+        DownloadPool.join()
+        for r in results:
+            allgood,errorvalue=r
+            if allgood:
+                WriteTextFile(rev_file,item_rev)
+            else:
+                ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, tarBallDownloadLink, errorvalue)
                 SaveAdnAppendToErrorLog(ErrorLog)
-        if AllGood: # if all good, write the rev file, so we will never process this sequence again, unless its updated
-            WriteTextFile(rev_file,item_rev)
+
     except Exception as ex:
         ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, downloadURL, ex)
         SaveAdnAppendToErrorLog(ErrorLog)
@@ -282,11 +301,11 @@ def process_update(json_file,lastseq):
         starting_index = 0
         Batch_Index = 0
         All_records=len(results_sorted_from_lastseq)
-        Total_Number_of_Batches = math.ceil(All_records/MaxItemsToProcess)
-        print (colored('Total Number of batches: %d with %d packages for each batch'%(Total_Number_of_Batches,MaxItemsToProcess),'cyan'))
+        Total_Number_of_Batches = math.ceil(All_records/BatchSize)
+        print (colored('Total Number of batches: %d with %d packages for each batch'%(Total_Number_of_Batches,BatchSize),'cyan'))
         while starting_index < All_records:
-            Total_To_Process = MaxItemsToProcess
-            if All_records - starting_index < MaxItemsToProcess:
+            Total_To_Process = BatchSize
+            if All_records - starting_index < BatchSize:
                 Total_To_Process = All_records - starting_index
                 print (colored('Total to process less than Max Allowed, Changing total to: %d'% (Total_To_Process),'red'))
             print (colored("Processing Batch %d     of     %d"%(Batch_Index + 1,Total_Number_of_Batches)   ,'green'))
@@ -297,13 +316,13 @@ def process_update(json_file,lastseq):
             packagesProcessString = packagesProcessString[:-1]
             packagesProcessString += "]"
             print (colored(packagesProcessString,'blue'))
-            ProcessPools = Pool(processes=MaxItemsToProcess)
-            # got the below from: https://stackoverflow.com/questions/41920124/multiprocessing-use-tqdm-to-display-a-progress-bar/45276885
-            list(tqdm.tqdm(ProcessPools.imap_unordered(DownloadAndProcessesItemJob,
+            # ProcessPools = Pool(processes=MaxItemsToProcess)
+             # we are processing package by package, each package will get multiple processes for downloading
+            list(tqdm.tqdm(map(DownloadAndProcessesItemJob,
                                     itemBatch), total=len(itemBatch), ))
 
-            ProcessPools.close()
-            ProcessPools.join()
+            # ProcessPools.close()
+            # ProcessPools.join()
             starting_index += Total_To_Process
             Batch_Index += 1
             UpdateLastSeqFile(itemBatch[-1]['seq']) # last item sequence number in batch
