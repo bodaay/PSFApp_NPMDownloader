@@ -24,6 +24,7 @@ import re
 
 BatchSize = 40
 MaxDownloadProcess = 40
+MaxNumberOfDownloadRetries = 2
 ROOT_FOLDER_NAME = "/Synology/NPM/"
 SkimDB_Main_Registry_Link = "https://skimdb.npmjs.com/registry/"
 working_path = os.path.join(ROOT_FOLDER_NAME,"sync_data_indexes")
@@ -198,18 +199,23 @@ signal.signal(signal.SIGINT, signal_handler)
 def DownloadTar(package):
     AllGood = True
     Error = None
-    try:
-        tarBallDownloadLink = package['link']
-        r = requests.get(tarBallDownloadLink, timeout=600)
-        fname = tarBallDownloadLink.rsplit('/', 1)[-1]
-        tarBallLocalFile=os.path.join(package['downloadPath'],fname)
-        with open(tarBallLocalFile, 'wb') as f:
-            f.write(r.content)
-    except Exception as ex:
-        AllGood = False
-        #ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, tarBallDownloadLink, ex)
-        Error = ex
-        # SaveAdnAppendToErrorLog(ErrorLog)
+    numberOfTries = 0
+    while numberOfTries<MaxNumberOfDownloadRetries:
+        try:
+            tarBallDownloadLink = package['link']
+            r = requests.get(tarBallDownloadLink, timeout=10)
+            fname = tarBallDownloadLink.rsplit('/', 1)[-1]
+            tarBallLocalFile=os.path.join(package['downloadPath'],fname)
+            with open(tarBallLocalFile, 'wb') as f:
+                f.write(r.content)
+            AllGood = True
+            break
+        except Exception as ex:
+            AllGood = False
+            #ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, tarBallDownloadLink, ex)
+            Error = ex
+            # SaveAdnAppendToErrorLog(ErrorLog)
+        numberOfTries += 1
     return AllGood,Error
 
 def DownloadAndProcessesItemJob(item):
