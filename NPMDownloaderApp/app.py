@@ -25,6 +25,7 @@ import re
 BatchSize = 40
 MaxDownloadProcess = 40
 MaxNumberOfDownloadRetries = 2
+BackupProgeressAfterBatches = 5
 ROOT_FOLDER_NAME = "/Synology/NPM/"
 SkimDB_Main_Registry_Link = "https://skimdb.npmjs.com/registry/"
 working_path = os.path.join(ROOT_FOLDER_NAME,"sync_data_indexes")
@@ -102,15 +103,16 @@ def FilesMatching(file1, file2):
     # then we check by checksum
     return True
 
-def UpdateLastSeqFile(sequncenumer):
-    if os.path.exists(LastSeqFile):
-        with open(LastSeqFile,'r') as ls:
-            LatestSeq=  ls.readline()
-            backupPath = os.path.join(working_path,"bakcup")
-            os.makedirs(backupPath,exist_ok=True)
-            newFileName= os.path.join(backupPath,"__lastsequece"+ "_" + LatestSeq +".txt")
-            with open(newFileName,'w') as f:
-                f.write(str(LatestSeq))
+def UpdateLastSeqFile(sequncenumer,makeBackup=False):
+    if makeBackup:
+        if os.path.exists(LastSeqFile):
+            with open(LastSeqFile,'r') as ls:
+                LatestSeq=  ls.readline()
+                backupPath = os.path.join(working_path,"bakcup")
+                os.makedirs(backupPath,exist_ok=True)
+                newFileName= os.path.join(backupPath,"__lastsequece"+ "_" + LatestSeq +".txt")
+                with open(newFileName,'w') as f:
+                    f.write(str(LatestSeq))
     with open(LastSeqFile,'w') as f:
         f.write(str(sequncenumer))
 
@@ -318,6 +320,7 @@ def process_update(json_file,lastseq):
         jsonObj = None # clear it
         starting_index = 0
         Batch_Index = 0
+        BatchBackupCounter = 0
         All_records=len(results_sorted_from_lastseq)
         Total_Number_of_Batches = math.ceil(All_records/BatchSize)
         print (colored('Total Number of batches: %d with %d packages for each batch'%(Total_Number_of_Batches,BatchSize),'cyan'))
@@ -345,7 +348,14 @@ def process_update(json_file,lastseq):
             # ProcessPools.join()
             starting_index += Total_To_Process
             Batch_Index += 1
-            UpdateLastSeqFile(itemBatch[-1]['seq']) # last item sequence number in batch
+            BatchBackupCounter += 1
+            if BatchBackupCounter >= BackupProgeressAfterBatches:
+                print (colored("Backup Batches Counter= %d , Backing up Progress file, and create a backup" % BatchBackupCounter, 'magenta'))
+                BatchBackupCounter = 0 # reset the counter
+                UpdateLastSeqFile(itemBatch[-1]['seq'],makeBackup=True) # last item sequence number in batch
+            else:
+                UpdateLastSeqFile(itemBatch[-1]['seq'],makeBackup=False) # last item sequence number in batch
+           
          
         print(colored('Done :)','cyan'))
 
