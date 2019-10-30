@@ -32,7 +32,7 @@ packages_path = os.path.join(ROOT_FOLDER_NAME, "data")
 logfile_path = os.path.join(working_path, "logs")
 LastSeqFile = os.path.join(working_path,"__lastsequece")
 logFileName = os.path.join(logfile_path,datetime.now().strftime('FailedList_%d-%m-%Y_%H_%M.log'))
-   
+DONWLOAD_CHUNK_SIZE_MB = 4   
 
 def GetMD5(file1):
     if not os.path.exists(file1):
@@ -203,11 +203,17 @@ def DownloadTar(package):
     while numberOfTries<MaxNumberOfDownloadRetries:
         try:
             tarBallDownloadLink = package['link']
-            r = requests.get(tarBallDownloadLink, timeout=10)
+            # r = requests.get(tarBallDownloadLink, timeout=10)
             fname = tarBallDownloadLink.rsplit('/', 1)[-1]
             tarBallLocalFile=os.path.join(package['downloadPath'],fname)
-            with open(tarBallLocalFile, 'wb') as f:
-                f.write(r.content)
+            with requests.get(tarBallDownloadLink, stream=True,timeout=10) as r:
+                r.raise_for_status()
+                with open(tarBallLocalFile, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=DONWLOAD_CHUNK_SIZE_MB * 1024): 
+                        if chunk: # filter out keep-alive new chunks
+                            f.write(chunk)
+            # with open(tarBallLocalFile, 'wb') as f:
+            #     f.write(r.content)
             AllGood = True
             break
         except Exception as ex:
