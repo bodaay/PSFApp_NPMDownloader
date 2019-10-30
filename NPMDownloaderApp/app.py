@@ -91,7 +91,7 @@ def humanbytes(B):
 
 def FilesMatching(file1, file2):
     # first we check by size, faster
-    if not os.path.exists(file1):
+    if not os.path.exists(file1): 
         return False
     if not os.path.exists(file2):
         return False
@@ -103,6 +103,14 @@ def FilesMatching(file1, file2):
     return True
 
 def UpdateLastSeqFile(sequncenumer):
+    if os.path.exists(LastSeqFile):
+        with open(LastSeqFile,'r') as ls:
+            LatestSeq=  ls.readline()
+            backupPath = os.path.join(working_path,"bakcup")
+            os.makedirs(backupPath,exist_ok=True)
+            newFileName= os.path.join("__lastsequece"+ "_" + LatestSeq +".txt")
+            with open(newFileName,'w') as f:
+                f.write(str(LatestSeq))
     with open(LastSeqFile,'w') as f:
         f.write(str(sequncenumer))
 
