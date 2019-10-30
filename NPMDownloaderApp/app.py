@@ -108,7 +108,7 @@ def UpdateLastSeqFile(sequncenumer):
             LatestSeq=  ls.readline()
             backupPath = os.path.join(working_path,"bakcup")
             os.makedirs(backupPath,exist_ok=True)
-            newFileName= os.path.join("__lastsequece"+ "_" + LatestSeq +".txt")
+            newFileName= os.path.join(backupPath,"__lastsequece"+ "_" + LatestSeq +".txt")
             with open(newFileName,'w') as f:
                 f.write(str(LatestSeq))
     with open(LastSeqFile,'w') as f:
