@@ -32,7 +32,7 @@ packages_path = os.path.join(ROOT_FOLDER_NAME, "data")
 logfile_path = os.path.join(working_path, "logs")
 LastSeqFile = os.path.join(working_path,"__lastsequece")
 logFileName = os.path.join(logfile_path,datetime.now().strftime('FailedList_%d-%m-%Y_%H_%M.log'))
-DONWLOAD_CHUNK_SIZE_MB = 4   
+DONWLOAD_CHUNK_SIZE_MB = 2   
 
 def GetMD5(file1):
     if not os.path.exists(file1):
