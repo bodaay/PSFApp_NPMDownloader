@@ -334,7 +334,7 @@ def process_update(json_file,lastseq):
             printIndex = 0
             packagesProcessString= "["
             for i in itemBatch:
-                packagesProcessString += str(printIndex) + "-" + i['id'] + ","
+                packagesProcessString += str(printIndex) + "-" + i['id'] + ", "
                 printIndex += 1
             packagesProcessString = packagesProcessString[:-2]
             packagesProcessString += "]"
