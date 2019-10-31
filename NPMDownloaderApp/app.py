@@ -242,9 +242,12 @@ def DownloadTar(package):
                     AllGood = True
                     break
             #getting here means never downloaded before
-            with requests.get(tarBallDownloadLink, stream=True,timeout=10) as r:
+            # with requests.get(tarBallDownloadLink, stream=True,timeout=10) as r:
+            #     with open(tarBallLocalFile, 'wb') as f:
+            #         shutil.copyfileobj(r.raw, f,length=DONWLOAD_CHUNK_SIZE_MB * 1024 * 1024)
+            with requests.get(tarBallDownloadLink,timeout=100) as r:
                 with open(tarBallLocalFile, 'wb') as f:
-                    shutil.copyfileobj(r.raw, f,length=DONWLOAD_CHUNK_SIZE_MB * 1024 * 1024)
+                    f.write(r.content)
             shasum = GetSHA1(tarBallLocalFile)
             if shasum == package['shasum']:
                 AllGood = True
