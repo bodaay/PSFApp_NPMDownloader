@@ -251,7 +251,7 @@ def DownloadTar(package):
                 break
             else:
                 AllGood = False
-                Error = "Hash Mismatch"
+                Error = "Hash Mismatch, Calculated: %s , actual: %s"%(shasum,package['shasum'])
         except Exception as ex:
             AllGood = False
             #ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, tarBallDownloadLink, ex)
