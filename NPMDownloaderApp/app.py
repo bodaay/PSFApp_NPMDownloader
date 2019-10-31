@@ -314,7 +314,7 @@ def DownloadAndProcessesItemJob(item):
             if allgood:
                 WriteTextFile(rev_file,item_rev)
             else:
-                ErrorLog = "#\nSequence %d\n%s\n%s\n%s\n%s\n#" % (item['seq'],package_name,item_rev, tarBallDownloadLink, errorvalue)
+                ErrorLog = "#\nSequence %d\n%s\n%s\n%s\n#" % (item['seq'],package_name,item_rev, errorvalue)
                 WriteFailedFile(errorfile,str.format("Error in Downlading - tar: %s" %(ErrorLog)),overwrite=False)
                 SaveAdnAppendToErrorLog(ErrorLog)
         DownloadPool = None
