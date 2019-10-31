@@ -278,13 +278,7 @@ def DownloadAndProcessesItemJob(item):
             if os.path.exists(packageFolderRoot):
                 shutil.rmtree(packageFolderRoot)
             return # skip this item
-    try:
-        os.makedirs(packageFolderTar,exist_ok=True) # this will make all folders required, including "-" which is used to store the tar balls
-    except Exception as ex:
-        ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, packageFolderTar, ex)
-        SaveAdnAppendToErrorLog(ErrorLog)
-        return
-    
+    os.makedirs(packageFolderTar,exist_ok=True) # this will make all folders required, including "-" which is used to store the tar balls
     # we will store a file indicating latest revision we processed
     CurrentRev=None
     # ShouldProcess=False
@@ -321,11 +315,12 @@ def DownloadAndProcessesItemJob(item):
                 WriteTextFile(rev_file,item_rev)
             else:
                 ErrorLog = "#\nSequence %d\n%s\n%s\n%s\n%s\n#" % (item['seq'],package_name,item_rev, tarBallDownloadLink, errorvalue)
-                WriteFailedFile(errorfile,str.format("Error in Downlading: %s" %(ErrorLog)),overwrite=False)
+                WriteFailedFile(errorfile,str.format("Error in Downlading - tar: %s" %(ErrorLog)),overwrite=False)
                 SaveAdnAppendToErrorLog(ErrorLog)
         DownloadPool = None
     except Exception as ex:
-        ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, downloadURL, ex)
+        ErrorLog = "#\nSequence %d\n%s\n%s\n%s\n%s\n#" % (item['seq'],package_name,item_rev, downloadURL, ex)
+        WriteFailedFile(errorfile,str.format("Error in Downlading - generic: %s" %(ErrorLog)),overwrite=True)
         SaveAdnAppendToErrorLog(ErrorLog)
     
 def GetStartingIndexForSorted(json_array,requriedValue):
