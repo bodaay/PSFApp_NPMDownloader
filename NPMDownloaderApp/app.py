@@ -233,6 +233,8 @@ def DownloadTar(package):
                     print("Hash match, wow")
                     AllGood = True
                     break
+                else:
+                    print ("Hash not matched, redownloading...")
             #getting here means never downloaded before
             with requests.get(tarBallDownloadLink, stream=True,timeout=10) as r:
                 with open(tarBallLocalFile, 'wb') as f:
