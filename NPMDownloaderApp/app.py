@@ -23,8 +23,8 @@ import re
 #TODO: we should keep downloading _changes.json weekly, and host this somewhere else. I cannot download it myself. I'm thinking of create a lambda function on aws and hosting the file on aws s3, I'll do this later, too lazy to do it now
 
 BatchSize = 40
-MaxDownloadProcess = 40
-MaxNumberOfDownloadRetries = 2
+MaxDownloadProcess = 20
+MaxNumberOfDownloadRetries = 5
 BackupProgeressAfterBatches = 5
 ROOT_FOLDER_NAME = "/Synology/NPM/"
 SkimDB_Main_Registry_Link = "https://skimdb.npmjs.com/registry/"
