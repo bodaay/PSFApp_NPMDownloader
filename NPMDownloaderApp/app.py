@@ -193,13 +193,15 @@ def SaveAdnAppendToErrorLog(data):
     except Exception as ex:
         print (ex)
 
-ProcessPools = []
+DownloadPool = None
 
 def signal_handler(sig, frame):
+    global DownloadPool
+    if DownloadPool:
+        DownloadPool.terminate()
     print('\nYou pressed Ctrl+C!')
     print('\nTerminating All Processes')
-    for p in ProcessPools:
-        p.termincate()
+    
     sys.exit(0)
 
 
@@ -233,6 +235,7 @@ def DownloadTar(package):
     return AllGood,Error
 
 def DownloadAndProcessesItemJob(item):
+    global DownloadPool
     package_name= item['id']
     packageFolderRoot = os.path.join(packages_path,item['id'])
     packageFolderTar = os.path.join(packageFolderRoot,"-")
@@ -289,7 +292,7 @@ def DownloadAndProcessesItemJob(item):
             else:
                 ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, tarBallDownloadLink, errorvalue)
                 SaveAdnAppendToErrorLog(ErrorLog)
-
+        DownloadPool = None
     except Exception as ex:
         ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, downloadURL, ex)
         SaveAdnAppendToErrorLog(ErrorLog)
