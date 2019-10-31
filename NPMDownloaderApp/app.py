@@ -267,6 +267,8 @@ def DownloadAndProcessesItemJob(item):
     packageFolderTar = os.path.join(packageFolderRoot,"-")
     rev_file = os.path.join(packageFolderRoot,"__rev")
     errorfile = os.path.join(packageFolderRoot,"__errors")
+    if os.path.exists(errorfile):
+        os.remove(errorfile)
     item_rev=item['changes'][0]['rev'].strip()
     package_name_url_safe = urllib.parse.quote(package_name, safe='')
     json_index_file = os.path.join(packageFolderRoot,"index.json")
