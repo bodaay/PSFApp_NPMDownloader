@@ -230,11 +230,8 @@ def DownloadTar(package):
             if os.path.exists(tarBallLocalFile):
                 downloadedSum=GetSHA1(tarBallLocalFile)
                 if downloadedSum == package['shasum']:
-                    print("Hash match, wow")
                     AllGood = True
                     break
-                else:
-                    print ("Hash not matched, redownloading...")
             #getting here means never downloaded before
             with requests.get(tarBallDownloadLink, stream=True,timeout=10) as r:
                 with open(tarBallLocalFile, 'wb') as f:
