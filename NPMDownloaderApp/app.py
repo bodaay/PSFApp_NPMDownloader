@@ -116,6 +116,9 @@ def UpdateLastSeqFile(sequncenumer,makeBackup=False):
     with open(LastSeqFile,'w') as f:
         f.write(str(sequncenumer))
 
+def timeStamped(fname, fmt='%Y-%m-%d-%H-%M-%S_{fname}'):
+    return datetime.now().strftime(fmt).format(fname=fname)
+
 def start(argv):
     # I want to get the path of app.py
     #base_path = os.path.dirname(os.path.realpath(__file__))
@@ -170,7 +173,10 @@ def start(argv):
     
     process_update(local_temp_file_name,LatestSeq)
     # # delete index.temp.json
-
+    LastUpdateFile = os.path.join(working_path,timeStamped("_last_updated"))
+    print (colored("Writing last update file: %s"%LastUpdateFile,'red'))
+    with open(LastUpdateFile,"w") as f:
+        f.write(timeStamped(""))
     # os.remove(local_temp_file_name)
     return
     # installRequired.CheckRequiredModuels(required_modules)
