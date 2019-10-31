@@ -201,6 +201,15 @@ def SaveAdnAppendToErrorLog(data):
     except Exception as ex:
         print (ex)
 
+def WriteFailedFile(filefail,txt,overwrite=False):
+    if overwrite:
+        with open(filefail, 'w') as f:
+            f.write(str(txt))
+    else: # append
+        with open(filefail, 'a+') as f:
+            f.write(str(txt))
+
+
 DownloadPool = None
 
 def signal_handler(sig, frame):
@@ -257,6 +266,7 @@ def DownloadAndProcessesItemJob(item):
     packageFolderRoot = os.path.join(packages_path,item['id'])
     packageFolderTar = os.path.join(packageFolderRoot,"-")
     rev_file = os.path.join(packageFolderRoot,"__rev")
+    errorfile = os.path.join(packageFolderRoot,"__errors")
     item_rev=item['changes'][0]['rev'].strip()
     package_name_url_safe = urllib.parse.quote(package_name, safe='')
     json_index_file = os.path.join(packageFolderRoot,"index.json")
@@ -308,7 +318,8 @@ def DownloadAndProcessesItemJob(item):
             if allgood:
                 WriteTextFile(rev_file,item_rev)
             else:
-                ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, tarBallDownloadLink, errorvalue)
+                ErrorLog = "#\nSequence %d\n%s\n%s\n%s\n%s\n#" % (item['seq'],package_name,item_rev, tarBallDownloadLink, errorvalue)
+                WriteFailedFile(errorfile,str.format("Error in Downlading: %s" %(ErrorLog)),overwrite=False)
                 SaveAdnAppendToErrorLog(ErrorLog)
         DownloadPool = None
     except Exception as ex:
