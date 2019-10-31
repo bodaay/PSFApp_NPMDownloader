@@ -55,23 +55,25 @@ def GetSHA512(file1):
     return hashed.hexdigest()
 
 
-def GetSHA256(file1):
+def GetSHA1(file1):
     if not os.path.exists(file1):
         return None
-    hashed = hashlib.sha256()
+    hashed = hashlib.sha1()
     with open(file1, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
             hashed.update(chunk)
     return hashed.hexdigest()
-
 
 def ChechHash(hashfunction, file):
     if hashfunction.lower() == "sha512":
         return GetSHA512(file)
     if hashfunction.lower() == "sha256":
         return GetSHA512(file)
+    if hashfunction.lower() == "sha1":
+        return GetSHA1(file)
     if hashfunction.lower() == "md5":
         return GetSHA512(file)
+
 def humanbytes(B):
    'Return the given bytes as a human friendly KB, MB, GB, or TB string'
    B = float(B)
@@ -215,7 +217,7 @@ signal.signal(signal.SIGINT, signal_handler)
 
 
 def DownloadTar(package):
-    AllGood = True
+    AllGood = False
     Error = None
     numberOfTries = 0
     while numberOfTries<MaxNumberOfDownloadRetries:
@@ -224,14 +226,23 @@ def DownloadTar(package):
             # r = requests.get(tarBallDownloadLink, timeout=10)
             fname = tarBallDownloadLink.rsplit('/', 1)[-1]
             tarBallLocalFile=os.path.join(package['downloadPath'],fname)
+            #lets check if this file downloaded before
+            if os.path.exists(tarBallLocalFile):
+                downloadedSum=GetSHA1(tarBallLocalFile)
+                if downloadedSum == package['shasum']:
+                    AllGood = True
+                    break
+            #getting here means never downloaded before
             with requests.get(tarBallDownloadLink, stream=True,timeout=10) as r:
                 with open(tarBallLocalFile, 'wb') as f:
                     shutil.copyfileobj(r.raw, f,length=DONWLOAD_CHUNK_SIZE_MB * 1024 * 1024)
-           
-            # with open(tarBallLocalFile, 'wb') as f:
-            #     f.write(r.content)
-            AllGood = True
-            break
+            shasum = GetSHA1(tarBallLocalFile)
+            if shasum == package['shasum']:
+                AllGood = True
+                break
+            else:
+                AllGood = False
+                Error = "Hash Mismatch"
         except Exception as ex:
             AllGood = False
             #ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, tarBallDownloadLink, ex)
@@ -285,7 +296,8 @@ def DownloadAndProcessesItemJob(item):
         versions_dict = jsonObj['versions']
         for k in versions_dict:
             tarBallDownloadLink = versions_dict[k]['dist']['tarball']
-            package = {"link": tarBallDownloadLink,"downloadPath":packageFolderTar}
+            shasum = versions_dict[k]['dist']['shasum']
+            package = {"link": tarBallDownloadLink,"downloadPath":packageFolderTar,"shasum":shasum}
             tars_to_download.append(package)
         DownloadPool = Pool(processes=MaxDownloadProcess)
         results = DownloadPool.imap(DownloadTar,tars_to_download)
@@ -315,7 +327,6 @@ def GetStartingIndexForSorted(json_array,requriedValue):
     return idx
     
 def process_update(json_file,lastseq):
-    global ProcessPools
     with open(json_file, 'r') as jsonfile:
         jsonObj = json.loads(jsonfile.read()) # this may take really long time, for the first run
         print(colored('Sorting out records, this may take some time...','red'))
