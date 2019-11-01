@@ -23,7 +23,7 @@ import re
 #TODO: we should keep downloading _changes.json weekly, and host this somewhere else. I cannot download it myself. I'm thinking of create a lambda function on aws and hosting the file on aws s3, I'll do this later, too lazy to do it now
 
 BatchSize = 40
-MaxDownloadProcess = 20
+MaxDownloadProcess = 40
 MaxNumberOfDownloadRetries = 5
 BackupProgeressAfterBatches = 5
 ROOT_FOLDER_NAME = "/Synology/NPM/"
@@ -263,7 +263,7 @@ def DownloadTar(package):
         numberOfTries += 1
     return AllGood,Error
 
-def DownloadAndProcessesItemJob(item):
+def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
     global DownloadPool
     package_name= item['id']
     packageFolderRoot = os.path.join(packages_path,item['id'])
@@ -296,14 +296,13 @@ def DownloadAndProcessesItemJob(item):
         #write json index file
         downloadURL = SkimDB_Main_Registry_Link + package_name_url_safe
         jsonObj=None
-        if not os.path.exists(json_index_file):
+        if not os.path.exists(json_index_file) or ForceDownloadJSON==True:
             r = requests.get(downloadURL,timeout=20)
             json_raw=r.content
             with open(json_index_file, 'wb') as f:
                 f.write(json_raw)
-        else:
-            with open(json_index_file, 'rb') as f:
-                jsonObj = json.loads(f.read)
+        with open(json_index_file, 'rb') as f:
+            jsonObj = json.loads(f.read())
         
         # now we will download all tar balls
         tars_to_download = []
