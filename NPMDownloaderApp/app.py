@@ -245,6 +245,7 @@ def DownloadTar(package):
             # with requests.get(tarBallDownloadLink, stream=True,timeout=10) as r:
             #     with open(tarBallLocalFile, 'wb') as f:
             #         shutil.copyfileobj(r.raw, f,length=DONWLOAD_CHUNK_SIZE_MB * 1024 * 1024)
+            #this shit is having too many problems with downloading streams, thats why I've changed it back to full download, all the best with memory allocation =(
             with requests.get(tarBallDownloadLink,timeout=100) as r:
                 with open(tarBallLocalFile, 'wb') as f:
                     f.write(r.content)
@@ -291,7 +292,7 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
     if CurrentRev:
         if CurrentRev==item_rev:
             # print(colored("package '%s' with same rev %s number, will be skipped"%(item['id'],item_rev),'red'))
-            pass#return
+            return
     try:
         #write json index file
         downloadURL = SkimDB_Main_Registry_Link + package_name_url_safe
