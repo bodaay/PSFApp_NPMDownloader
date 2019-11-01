@@ -291,15 +291,20 @@ def DownloadAndProcessesItemJob(item):
     if CurrentRev:
         if CurrentRev==item_rev:
             # print(colored("package '%s' with same rev %s number, will be skipped"%(item['id'],item_rev),'red'))
-            return
+            pass#return
     try:
         #write json index file
         downloadURL = SkimDB_Main_Registry_Link + package_name_url_safe
-        r = requests.get(downloadURL,timeout=20)
-        json_raw=r.content
-        with open(json_index_file, 'wb') as f:
-            f.write(json_raw)
-        jsonObj = json.loads(json_raw)
+        jsonObj=None
+        if not os.path.exists(json_index_file):
+            r = requests.get(downloadURL,timeout=20)
+            json_raw=r.content
+            with open(json_index_file, 'wb') as f:
+                f.write(json_raw)
+        else:
+            with open(json_index_file, 'rb') as f:
+                jsonObj = json.loads(f.read)
+        
         # now we will download all tar balls
         tars_to_download = []
         versions_dict = jsonObj['versions']
