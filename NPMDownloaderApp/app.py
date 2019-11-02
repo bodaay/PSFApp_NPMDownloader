@@ -287,8 +287,7 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
     packageFolderTar = os.path.join(packageFolderRoot,"-")
     rev_file = os.path.join(packageFolderRoot,"__rev")
     errorfile = os.path.join(packageFolderRoot,"__errors")
-    if os.path.exists(errorfile):
-        os.remove(errorfile)
+    
     item_rev=item['changes'][0]['rev'].strip()
     package_name_url_safe = urllib.parse.quote(package_name, safe='')
     json_index_file = os.path.join(packageFolderRoot,"index.json")
@@ -306,9 +305,15 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
         with open (rev_file,'r') as f:
             CurrentRev=f.readline().strip()
     if CurrentRev:
-        if CurrentRev==item_rev:
-            # print(colored("package '%s' with same rev %s number, will be skipped"%(item['id'],item_rev),'red'))
-            pass #return
+        if not CurrentRev==item_rev:
+            ForceDownloadJSON = True
+            os.remove(rev_file)
+            os.remove(errorfile)
+        else: # if the rev did not change, we can just return
+            return
+        
+    if os.path.exists(errorfile): # clear any old error
+        os.remove(errorfile)
     try:
         #write json index file
         downloadURL = SkimDB_Main_Registry_Link + package_name_url_safe
@@ -342,7 +347,7 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
                 WriteFailedFile(errorfile,str.format("Error in Downlading - tar: %s" %(ErrorLog)),overwrite=False)
                 SaveAdnAppendToErrorLog(ErrorLog)
         DownloadPool = None
-        if nothing_failed:
+        if nothing_failed: # if nothing failed, we will write __rev file
              WriteTextFile(rev_file,item_rev)
     except Exception as ex:
         ErrorLog = "#\nSequence %d\n%s\n%s\n%s\n%s\n#" % (item['seq'],package_name,item_rev, downloadURL, ex)
@@ -393,13 +398,13 @@ def process_update(json_file,lastseq):
             packagesProcessString = packagesProcessString[:-2]
             packagesProcessString += "]"
             print (colored(packagesProcessString,'blue'))
-            # ProcessPools = Pool(processes=MaxItemsToProcess)
+            ProcessPools = Pool(processes=MaxItemsToProcess)
              # we are processing package by package, each package will get multiple processes for downloading
-            list(tqdm.tqdm(map(DownloadAndProcessesItemJob,
+            list(tqdm.tqdm(ProcessPools.imap_unordered(DownloadAndProcessesItemJob,
                                     itemBatch), total=len(itemBatch), ))
 
-            # ProcessPools.close()
-            # ProcessPools.join()
+            ProcessPools.close()
+            ProcessPools.join()
             starting_index += Total_To_Process
             Batch_Index += 1
             BatchBackupCounter += 1
