@@ -17,6 +17,9 @@ from datetime import datetime
 from multiprocessing.pool import Pool
 from termcolor import colored
 from zipfile import ZipFile
+import random
+import string
+from urllib.parse import urlparse
 import tqdm  # pip3 install tqdm
 import re
  
@@ -242,13 +245,27 @@ def DownloadTar(package):
                     AllGood = True
                     break
             #getting here means never downloaded before
-            # with requests.get(tarBallDownloadLink, stream=True,timeout=10) as r:
+            
+            # I don't know how imran tried this stupid trick and it worked, we need to append any extra letter to original url do it will download
+            # for example:
+            # This link: https://registry.npmjs.org/@middy/http-content-negotiation/-/http-content-negotiation-1.0.0-alpha.48.tgz
+            # becomes: https://registry.npmjs.org/g/@middy/http-content-negotiation/-/http-content-negotiation-1.0.0-alpha.48.tgz
+            cloudflare_error_500_trick_tries= 0
+            cloudflare_error_500_max_tries = 3
+            cloudflare_Download_link=tarBallDownloadLink
+            while cloudflare_error_500_trick_tries<cloudflare_error_500_max_tries:
+                r = requests.get(cloudflare_Download_link, stream=True,timeout=20)
+                if r.status_code==200:
+                    with open(tarBallLocalFile, 'wb') as f:
+                        shutil.copyfileobj(r.raw, f,length=DONWLOAD_CHUNK_SIZE_MB * 1024 * 1024)
+                    break
+                parsedurl=urlparse(tarBallDownloadLink)
+                cloudflare_Download_link = parsedurl[0] + "://" + parsedurl[1] + "/" + random.choice(string.ascii_letters) + parsedurl[2]
+                cloudflare_error_500_trick_tries += 1
+            # #this shit is having too many problems with downloading streams, thats why I've changed it back to full download, all the best with memory allocation =(
+            # with requests.get(tarBallDownloadLink,timeout=100) as r:
             #     with open(tarBallLocalFile, 'wb') as f:
-            #         shutil.copyfileobj(r.raw, f,length=DONWLOAD_CHUNK_SIZE_MB * 1024 * 1024)
-            #this shit is having too many problems with downloading streams, thats why I've changed it back to full download, all the best with memory allocation =(
-            with requests.get(tarBallDownloadLink,timeout=100) as r:
-                with open(tarBallLocalFile, 'wb') as f:
-                    f.write(r.content)
+            #         f.write(r.content)
             shasum = GetSHA1(tarBallLocalFile)
             if shasum == package['shasum']:
                 AllGood = True
