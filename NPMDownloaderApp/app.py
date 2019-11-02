@@ -381,8 +381,8 @@ def process_update(json_file,lastseq):
             if All_records - starting_index < BatchSize:
                 Total_To_Process = All_records - starting_index
                 print (colored('Total to process less than Max Allowed, Changing total to: %d'% (Total_To_Process),'red'))
-            print (colored("Processing Batch %d     of     %d"%(Batch_Index + 1,Total_Number_of_Batches)   ,'green'))
             itemBatch = results_sorted_from_lastseq[starting_index:starting_index+Total_To_Process]
+            print (colored("Processing Batch %d     of     %d    Starting Sequence:%d"%(Batch_Index + 1,Total_Number_of_Batches,itemBatch[0]['seq'])   ,'green'))
             printIndex = 0
             packagesProcessString= "["
             for i in itemBatch:
