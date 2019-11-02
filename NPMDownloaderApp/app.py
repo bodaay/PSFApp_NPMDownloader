@@ -213,12 +213,12 @@ def WriteFailedFile(filefail,txt,overwrite=False):
             f.write(str(txt))
 
 
-DownloadPool = None
+# DownloadPool = None
 
 def signal_handler(sig, frame):
-    global DownloadPool
-    if DownloadPool:
-        DownloadPool.terminate()
+    # global DownloadPool
+    # if DownloadPool:
+    #     DownloadPool.terminate()
     print('\nYou pressed Ctrl+C!')
     print('\nTerminating All Processes')
     
@@ -281,7 +281,7 @@ def DownloadTar(package):
     return AllGood,Error
 
 def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
-    global DownloadPool
+    # global DownloadPool
     package_name= item['id']
     packageFolderRoot = os.path.join(packages_path,item['id'])
     packageFolderTar = os.path.join(packageFolderRoot,"-")
@@ -347,7 +347,7 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
                 ErrorLog = "#\nSequence %d\n%s\n%s\n%s\n#" % (item['seq'],package_name,item_rev, errorvalue)
                 WriteFailedFile(errorfile,str.format("Error in Downlading - tar: %s" %(ErrorLog)),overwrite=False)
                 SaveAdnAppendToErrorLog(ErrorLog)
-        DownloadPool = None
+        # DownloadPool = None
         if nothing_failed: # if nothing failed, we will write __rev file
              WriteTextFile(rev_file,item_rev)
     except Exception as ex:
