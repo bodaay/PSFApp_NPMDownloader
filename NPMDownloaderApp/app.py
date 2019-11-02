@@ -262,7 +262,6 @@ def DownloadTar(package):
                 parsedurl=urlparse(tarBallDownloadLink)
                 cloudflare_Download_link = parsedurl[0] + "://" + parsedurl[1] + "/" + random.choice(string.ascii_letters) + "/" + random.choice(string.ascii_letters) + "/" + random.choice(string.ascii_letters) + parsedurl[2]
                 cloudflare_error_500_trick_tries += 1
-            # #this shit is having too many problems with downloading streams, thats why I've changed it back to full download, all the best with memory allocation =(
             # with requests.get(tarBallDownloadLink,timeout=100) as r:
             #     with open(tarBallLocalFile, 'wb') as f:
             #         f.write(r.content)
