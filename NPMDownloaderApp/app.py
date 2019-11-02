@@ -254,7 +254,6 @@ def DownloadTar(package):
             cloudflare_error_500_max_tries = 3
             cloudflare_Download_link=tarBallDownloadLink
             while cloudflare_error_500_trick_tries<cloudflare_error_500_max_tries:
-                print ("TEMP: Downloading TAR:" + tarBallDownloadLink)
                 r = requests.get(cloudflare_Download_link, stream=True,timeout=20)
                 if r.status_code==200:
                     with open(tarBallLocalFile, 'wb') as f:
@@ -315,7 +314,6 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
         downloadURL = SkimDB_Main_Registry_Link + package_name_url_safe
         jsonObj=None
         if not os.path.exists(json_index_file) or ForceDownloadJSON==True:
-            print ("TEMP: Downloading JSON")
             r = requests.get(downloadURL,timeout=20)
             json_raw=r.content
             with open(json_index_file, 'wb') as f:
@@ -335,15 +333,17 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
         results = DownloadPool.imap(DownloadTar,tars_to_download)
         DownloadPool.close()
         DownloadPool.join()
+        nothing_failed = True
         for r in results:
             allgood,errorvalue=r
-            if allgood:
-                WriteTextFile(rev_file,item_rev)
-            else:
+            if not allgood:
+                nothing_failed = False
                 ErrorLog = "#\nSequence %d\n%s\n%s\n%s\n#" % (item['seq'],package_name,item_rev, errorvalue)
                 WriteFailedFile(errorfile,str.format("Error in Downlading - tar: %s" %(ErrorLog)),overwrite=False)
                 SaveAdnAppendToErrorLog(ErrorLog)
         DownloadPool = None
+        if nothing_failed:
+             WriteTextFile(rev_file,item_rev)
     except Exception as ex:
         ErrorLog = "#\nSequence %d\n%s\n%s\n%s\n%s\n#" % (item['seq'],package_name,item_rev, downloadURL, ex)
         WriteFailedFile(errorfile,str.format("Error in Downlading - generic: %s" %(ErrorLog)),overwrite=True)
