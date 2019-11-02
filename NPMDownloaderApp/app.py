@@ -254,6 +254,7 @@ def DownloadTar(package):
             cloudflare_error_500_max_tries = 3
             cloudflare_Download_link=tarBallDownloadLink
             while cloudflare_error_500_trick_tries<cloudflare_error_500_max_tries:
+                print ("TEMP: Downloading TAR:" + tarBallDownloadLink)
                 r = requests.get(cloudflare_Download_link, stream=True,timeout=20)
                 if r.status_code==200:
                     with open(tarBallLocalFile, 'wb') as f:
@@ -308,12 +309,13 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
     if CurrentRev:
         if CurrentRev==item_rev:
             # print(colored("package '%s' with same rev %s number, will be skipped"%(item['id'],item_rev),'red'))
-            return
+            pass #return
     try:
         #write json index file
         downloadURL = SkimDB_Main_Registry_Link + package_name_url_safe
         jsonObj=None
         if not os.path.exists(json_index_file) or ForceDownloadJSON==True:
+            print ("TEMP: Downloading JSON")
             r = requests.get(downloadURL,timeout=20)
             json_raw=r.content
             with open(json_index_file, 'wb') as f:
