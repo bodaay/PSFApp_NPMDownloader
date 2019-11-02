@@ -14,7 +14,7 @@ import urllib.parse
 import numpy as np # pip3 install numpy
 from datetime import datetime
 # I'm using thead pool, because its easier and I can use global variables easily with it, We don't need high processing power for this project, just multi thread
-from multiprocessing.pool import Pool
+from multiprocessing.pool import Pool,ThreadPool
 from termcolor import colored
 from zipfile import ZipFile
 import random
@@ -334,7 +334,7 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
             shasum = versions_dict[k]['dist']['shasum']
             package = {"link": tarBallDownloadLink,"downloadPath":packageFolderTar,"shasum":shasum}
             tars_to_download.append(package)
-        DownloadPool = Pool(processes=MaxDownloadProcess)
+        DownloadPool = ThreadPool(processes=MaxDownloadProcess)
         results = DownloadPool.imap(DownloadTar,tars_to_download)
         DownloadPool.close()
         DownloadPool.join()
@@ -398,7 +398,7 @@ def process_update(json_file,lastseq):
             packagesProcessString = packagesProcessString[:-2]
             packagesProcessString += "]"
             print (colored(packagesProcessString,'blue'))
-            ProcessPools = Pool(processes=MaxDownloadProcess)
+            ProcessPools = ThreadPool(processes=MaxDownloadProcess)
              # we are processing package by package, each package will get multiple processes for downloading
             list(tqdm.tqdm(ProcessPools.imap_unordered(DownloadAndProcessesItemJob,
                                     itemBatch), total=len(itemBatch), ))
