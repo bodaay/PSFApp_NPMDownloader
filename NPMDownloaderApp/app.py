@@ -260,7 +260,7 @@ def DownloadTar(package):
                         shutil.copyfileobj(r.raw, f,length=DONWLOAD_CHUNK_SIZE_MB * 1024 * 1024)
                     break
                 parsedurl=urlparse(tarBallDownloadLink)
-                cloudflare_Download_link = parsedurl[0] + "://" + parsedurl[1] + "/" + random.choice(string.ascii_letters) + "/" + random.choice(string.ascii_letters) + "/" + random.choice(string.ascii_letters) + parsedurl[2]
+                cloudflare_Download_link = parsedurl[0] + "://" + parsedurl[1] + "/" + random.choice(string.ascii_letters)  + random.choice(string.ascii_letters) + random.choice(string.ascii_letters) + parsedurl[2]
                 cloudflare_error_500_trick_tries += 1
             # with requests.get(tarBallDownloadLink,timeout=100) as r:
             #     with open(tarBallLocalFile, 'wb') as f:
