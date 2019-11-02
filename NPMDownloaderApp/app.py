@@ -310,7 +310,7 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
             os.remove(rev_file)
             os.remove(errorfile)
         else: # if the rev did not change, we can just return
-            return
+            pass#return
         
     if os.path.exists(errorfile): # clear any old error
         os.remove(errorfile)
@@ -398,7 +398,7 @@ def process_update(json_file,lastseq):
             packagesProcessString = packagesProcessString[:-2]
             packagesProcessString += "]"
             print (colored(packagesProcessString,'blue'))
-            ProcessPools = Pool(processes=MaxItemsToProcess)
+            ProcessPools = Pool(processes=MaxDownloadProcess)
              # we are processing package by package, each package will get multiple processes for downloading
             list(tqdm.tqdm(ProcessPools.imap_unordered(DownloadAndProcessesItemJob,
                                     itemBatch), total=len(itemBatch), ))
