@@ -308,7 +308,8 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
         if not CurrentRev==item_rev:
             ForceDownloadJSON = True
             os.remove(rev_file)
-            os.remove(errorfile)
+            if os.path.exists(errorfile): # clear any old error
+                os.remove(errorfile)
         else: # if the rev did not change, we can just return
             pass#return
         
