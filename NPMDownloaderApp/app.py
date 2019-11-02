@@ -245,11 +245,11 @@ def DownloadTar(package):
                     AllGood = True
                     break
             #getting here means never downloaded before
-            
+
             # I don't know how imran tried this stupid trick and it worked, we need to append any extra letter to original url do it will download
             # for example:
             # This link: https://registry.npmjs.org/@middy/http-content-negotiation/-/http-content-negotiation-1.0.0-alpha.48.tgz
-            # becomes: https://registry.npmjs.org/g/@middy/http-content-negotiation/-/http-content-negotiation-1.0.0-alpha.48.tgz
+            # becomes: https://registry.npmjs.org/a1c/@middy/http-content-negotiation/-/http-content-negotiation-1.0.0-alpha.48.tgz
             cloudflare_error_500_trick_tries= 0
             cloudflare_error_500_max_tries = 3
             cloudflare_Download_link=tarBallDownloadLink
@@ -260,7 +260,7 @@ def DownloadTar(package):
                         shutil.copyfileobj(r.raw, f,length=DONWLOAD_CHUNK_SIZE_MB * 1024 * 1024)
                     break
                 parsedurl=urlparse(tarBallDownloadLink)
-                cloudflare_Download_link = parsedurl[0] + "://" + parsedurl[1] + "/" + random.choice(string.ascii_letters) + parsedurl[2]
+                cloudflare_Download_link = parsedurl[0] + "://" + parsedurl[1] + "/" + random.choice(string.ascii_letters) + "/" + random.choice(string.ascii_letters) + "/" + random.choice(string.ascii_letters) + parsedurl[2]
                 cloudflare_error_500_trick_tries += 1
             # #this shit is having too many problems with downloading streams, thats why I've changed it back to full download, all the best with memory allocation =(
             # with requests.get(tarBallDownloadLink,timeout=100) as r:
