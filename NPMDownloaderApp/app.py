@@ -26,7 +26,8 @@ import re
 #TODO: we should keep downloading _changes.json weekly, and host this somewhere else. I cannot download it myself. I'm thinking of create a lambda function on aws and hosting the file on aws s3, I'll do this later, too lazy to do it now
 
 BatchSize = 40
-MaxDownloadProcess = 40
+MaxDownloadProcess = 10
+MaxThreads = 40
 MaxNumberOfDownloadRetries = 5
 BackupProgeressAfterBatches = 5
 ROOT_FOLDER_NAME = "/Synology/NPM/"
@@ -311,7 +312,7 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
             if os.path.exists(errorfile): # clear any old error
                 os.remove(errorfile)
         else: # if the rev did not change, we can just return
-            pass#return
+            pass#return # CHANGE ME BACK LATER TO RETURN
         
     if os.path.exists(errorfile): # clear any old error
         os.remove(errorfile)
@@ -399,7 +400,7 @@ def process_update(json_file,lastseq):
             packagesProcessString = packagesProcessString[:-2]
             packagesProcessString += "]"
             print (colored(packagesProcessString,'blue'))
-            ProcessPools = ThreadPool(processes=MaxDownloadProcess)
+            ProcessPools = ThreadPool(processes=MaxThreads)
              # we are processing package by package, each package will get multiple processes for downloading
             list(tqdm.tqdm(ProcessPools.imap_unordered(DownloadAndProcessesItemJob,
                                     itemBatch), total=len(itemBatch), ))
