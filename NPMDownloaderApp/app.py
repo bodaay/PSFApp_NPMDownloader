@@ -26,7 +26,7 @@ import re
 #TODO: we should keep downloading _changes.json weekly, and host this somewhere else. I cannot download it myself. I'm thinking of create a lambda function on aws and hosting the file on aws s3, I'll do this later, too lazy to do it now
 
 BatchSize = 40
-MaxThreads = 40
+MaxThreads = 20
 MaxDownloadsPerThread = 10
 MaxNumberOfDownloadRetries = 5
 BackupProgeressAfterBatches = 5
@@ -42,8 +42,6 @@ errors_global_path = os.path.join(working_path, "errors")
 LastSeqFile = os.path.join(working_path,"__lastsequece")
 
 
-import resource
-resource.setrlimit(resource.RLIMIT_NOFILE, (10000,-1)) # this will increase the resourses limit
 
 
 def GetMD5(file1):
@@ -131,50 +129,6 @@ def UpdateLastSeqFile(sequncenumer,makeBackup=False):
 
 def timeStamped(fname, fmt='%Y-%m-%d-%H-%M-%S_{fname}'):
     return datetime.now().strftime(fmt).format(fname=fname)
-
-def start(argv):
-    # I want to get the path of app.py
-    #base_path = os.path.dirname(os.path.realpath(__file__))
-
-    if not os.path.exists(working_path):
-        os.makedirs(working_path, exist_ok=True)
-    if not os.path.exists(packages_path):
-        os.makedirs(packages_path, exist_ok=True)
-    # if not os.path.exists(logfile_path):
-    #     os.makedirs(logfile_path, exist_ok=True)
-    if not os.path.exists(errors_global_path):
-        os.makedirs(errors_global_path, exist_ok=True)
-    
-    print ("Connecting to SkimDB to get latest Stats...")
-    r = requests.get(SkimDB_Main_Registry_Link, timeout=600)
-    statsJson = json.loads(r.content)
-    # print(statsJson)
-    print ("Total Number of packages: "+ colored(str(statsJson['doc_count']),'red'))
-    LatestSeq = "0"
-    if os.path.exists(LastSeqFile):
-        with open(LastSeqFile,'r') as ls:
-            LatestSeq=  ls.readline()
-    if LatestSeq == str(statsJson['committed_update_seq']):
-        print (colored('No Updates since latest run, nothing to do...Bye','red'))
-    ChangesFeedURLSuffix="_changes?feed=normal&style=all_docs&since=" + LatestSeq
-    local_temp_file_name = os.path.join(working_path, "_changes.json")
-    # make a backup of older file
-    if os.path.exists(local_temp_file_name):
-        shutil.copyfile(local_temp_file_name,local_temp_file_name+"_md5_"+GetMD5(local_temp_file_name)+".json")
-    else:
-        print (colored("I'm not downloading SkimDB _changes.json file, their connection is shit and unreliable, download it yourself from the link I provided, and paste the file into: %s" %(local_temp_file_name) ,'red'))
-        exit (1)
-    link = SkimDB_Main_Registry_Link + ChangesFeedURLSuffix
-    print ("To Get Latest SkimDB updates, use this Download Link: %s" %(colored(link,'green')))
-    process_update(local_temp_file_name,LatestSeq)
-    # # delete index.temp.json
-    LastUpdateFile = os.path.join(working_path,timeStamped("_last_updated"))
-    print (colored("Writing last update file: %s"%LastUpdateFile,'red'))
-    with open(LastUpdateFile,"w") as f:
-        f.write(timeStamped(""))
-    # os.remove(local_temp_file_name)
-    return
-
 
 def WriteTextFile(filename,data):
     with open (filename,'w') as f:
@@ -390,3 +344,48 @@ def process_update(json_file,lastseq):
          
         print(colored('Done :)','cyan'))
 
+def start(argv):
+    # I want to get the path of app.py
+    #base_path = os.path.dirname(os.path.realpath(__file__))
+
+    if not os.path.exists(working_path):
+        os.makedirs(working_path, exist_ok=True)
+    if not os.path.exists(packages_path):
+        os.makedirs(packages_path, exist_ok=True)
+    # if not os.path.exists(logfile_path):
+    #     os.makedirs(logfile_path, exist_ok=True)
+    if not os.path.exists(errors_global_path):
+        os.makedirs(errors_global_path, exist_ok=True)
+    
+    print ("Batch Size: %d      Max Number of running Threads: %d      Max Downloads Per Thread: %d      Stream Download Chunk Size (MB): %d" %
+            (colored(BatchSize,"cyan") ,colored(MaxThreads,"cyan"),colored(MaxDownloadsPerThread,"cyan"),colored(DONWLOAD_CHUNK_SIZE_MB,"cyan")))
+    print ("You may want to increase your soft limit, by doing\n ulimit -n 10000")
+    print ("Connecting to SkimDB to get latest Stats...")
+    r = requests.get(SkimDB_Main_Registry_Link, timeout=600)
+    statsJson = json.loads(r.content)
+    # print(statsJson)
+    print ("Total Number of packages: "+ colored(str(statsJson['doc_count']),'red'))
+    LatestSeq = "0"
+    if os.path.exists(LastSeqFile):
+        with open(LastSeqFile,'r') as ls:
+            LatestSeq=  ls.readline()
+    if LatestSeq == str(statsJson['committed_update_seq']):
+        print (colored('No Updates since latest run, nothing to do...Bye','red'))
+    ChangesFeedURLSuffix="_changes?feed=normal&style=all_docs&since=" + LatestSeq
+    local_temp_file_name = os.path.join(working_path, "_changes.json")
+    # make a backup of older file
+    if os.path.exists(local_temp_file_name):
+        shutil.copyfile(local_temp_file_name,local_temp_file_name+"_md5_"+GetMD5(local_temp_file_name)+".json")
+    else:
+        print (colored("I'm not downloading SkimDB _changes.json file, their connection is shit and unreliable, download it yourself from the link I provided, and paste the file into: %s" %(local_temp_file_name) ,'red'))
+        exit (1)
+    link = SkimDB_Main_Registry_Link + ChangesFeedURLSuffix
+    print ("To Get Latest SkimDB updates, use this Download Link: %s" %(colored(link,'green')))
+    process_update(local_temp_file_name,LatestSeq)
+    # # delete index.temp.json
+    LastUpdateFile = os.path.join(working_path,timeStamped("_last_updated"))
+    print (colored("Writing last update file: %s"%LastUpdateFile,'red'))
+    with open(LastUpdateFile,"w") as f:
+        f.write(timeStamped(""))
+    # os.remove(local_temp_file_name)
+    return
