@@ -357,7 +357,7 @@ def start(argv):
     if not os.path.exists(errors_global_path):
         os.makedirs(errors_global_path, exist_ok=True)
     
-    print ("Batch Size: %d      Max Number of running Threads: %d      Max Downloads Per Thread: %d      Stream Download Chunk Size (MB): %d" %
+    print ("Batch Size: %s      Max Number of running Threads: %s      Max Downloads Per Thread: %s      Stream Download Chunk Size (MB): %s" %
             (colored(BatchSize,"cyan") ,colored(MaxThreads,"cyan"),colored(MaxDownloadsPerThread,"cyan"),colored(DONWLOAD_CHUNK_SIZE_MB,"cyan")))
     print ("You may want to increase your soft limit, by doing\n ulimit -n 10000")
     print ("Connecting to SkimDB to get latest Stats...")
