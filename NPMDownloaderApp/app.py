@@ -272,6 +272,7 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
         WriteTextFile(rev_file,item_rev)
     else:
         errorstring=json.dumps(Errors)
+        print (Errors)
         WriteFailedFile(errorfilelocal,errorstring)
         os.makedirs(packageFolderErrors,exist_ok=True)
         WriteFailedFile(errorfileglobal,errorstring)
