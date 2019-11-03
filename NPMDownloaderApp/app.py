@@ -269,9 +269,8 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
     except Exception as ex:
         Errors.append(str(ex))
 
-    if len(Errors)==0: # if nothing failed, we will write __rev file
-        WriteTextFile(rev_file,item_rev)
-    else:
+    WriteTextFile(rev_file,item_rev) # I"m writing this file anyway, regardless if there were error or not
+    if len(Errors)>0: # if nothing failed, we will write __rev file
         errorstring=json.dumps(Errors)
         # print (Errors)
         WriteFailedFile(errorfilelocal,errorstring)
