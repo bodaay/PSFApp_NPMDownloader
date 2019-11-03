@@ -26,17 +26,17 @@ import re
 #TODO: we should keep downloading _changes.json weekly, and host this somewhere else. I cannot download it myself. I'm thinking of create a lambda function on aws and hosting the file on aws s3, I'll do this later, too lazy to do it now
 
 BatchSize = 40
-MaxDownloadProcess = 10
 MaxThreads = 40
+MaxDownloadsPerThread = 10
 MaxNumberOfDownloadRetries = 5
 BackupProgeressAfterBatches = 5
 ROOT_FOLDER_NAME = "/Synology/NPM/"
 SkimDB_Main_Registry_Link = "https://skimdb.npmjs.com/registry/"
 working_path = os.path.join(ROOT_FOLDER_NAME,"sync_data_indexes")
 packages_path = os.path.join(ROOT_FOLDER_NAME, "data")
-logfile_path = os.path.join(working_path, "logs")
+errors_global_path = os.path.join(working_path, "errors")
 LastSeqFile = os.path.join(working_path,"__lastsequece")
-logFileName = os.path.join(logfile_path,datetime.now().strftime('FailedList_%d-%m-%Y_%H_%M.log'))
+
 DONWLOAD_CHUNK_SIZE_MB = 2   
 
 def GetMD5(file1):
@@ -133,8 +133,10 @@ def start(argv):
         os.makedirs(working_path, exist_ok=True)
     if not os.path.exists(packages_path):
         os.makedirs(packages_path, exist_ok=True)
-    if not os.path.exists(logfile_path):
-        os.makedirs(logfile_path, exist_ok=True)
+    # if not os.path.exists(logfile_path):
+    #     os.makedirs(logfile_path, exist_ok=True)
+    if not os.path.exists(errors_global_path):
+        os.makedirs(errors_global_path, exist_ok=True)
     
     print ("Connecting to SkimDB to get latest Stats...")
     r = requests.get(SkimDB_Main_Registry_Link, timeout=600)
@@ -157,26 +159,6 @@ def start(argv):
         exit (1)
     link = SkimDB_Main_Registry_Link + ChangesFeedURLSuffix
     print ("To Get Latest SkimDB updates, use this Download Link: %s" %(colored(link,'green')))
-    # r = requests.get(link, stream=True)
-    # block_size = 512 * 1024
-    # wrote = 0 
-    
-    
-    # with open(local_temp_file_name, 'wb') as f:
-    #     for data in r.iter_content(block_size):
-    #         if data:
-    #             wrote += len(data)
-    #             f.write(data)
-    #             sys.stdout.write("Total Downloaded: "+ colored("%s"%humanbytes(wrote),'cyan') +"     \r")
-    #             # sys.stdout.flush()
-    # if wrote>0:
-    #     sys.stdout.write("Total Downloaded: "+ colored("%s"%humanbytes(wrote),'cyan') +"     \r")
-    #     print("")
-    # test only
-    # UpdateLastSeqFile(str(statsJson['committed_update_seq'])) # delete me later, we should do this at very late stage
-
-
-    
     process_update(local_temp_file_name,LatestSeq)
     # # delete index.temp.json
     LastUpdateFile = os.path.join(working_path,timeStamped("_last_updated"))
@@ -185,25 +167,11 @@ def start(argv):
         f.write(timeStamped(""))
     # os.remove(local_temp_file_name)
     return
-    # installRequired.CheckRequiredModuels(required_modules)
-
-# https://www.nuget.org/api/v2/package/vlc/1.1.8
-
-
-# lock = Lock()
 
 
 def WriteTextFile(filename,data):
     with open (filename,'w') as f:
         f.writelines(data)
-
-def SaveAdnAppendToErrorLog(data):
-    # timeS = datetime.now().strftime('FailedList__%H_%M_%d_%m_%Y.log.json')
-    try:
-        with open(logFileName, "a+") as outfile:
-            outfile.write(data)
-    except Exception as ex:
-        print (ex)
 
 def WriteFailedFile(filefail,txt,overwrite=False):
     if overwrite:
@@ -214,12 +182,7 @@ def WriteFailedFile(filefail,txt,overwrite=False):
             f.write(str(txt))
 
 
-# DownloadPool = None
-
 def signal_handler(sig, frame):
-    # global DownloadPool
-    # if DownloadPool:
-    #     DownloadPool.terminate()
     print('\nYou pressed Ctrl+C!')
     print('\nTerminating All Processes')
     
@@ -275,21 +238,20 @@ def DownloadTar(package):
                 Error = "Hash Mismatch file: %s, Calculated: %s , actual: %s\nDownloadLink:%s"%(tarBallLocalFile,shasum,package['shasum'], tarBallDownloadLink)
         except Exception as ex:
             AllGood = False
-            #ErrorLog = "Sequence %d\n%s\n%s\n%s\n%s" % (item['seq'],package_name,item_rev, tarBallDownloadLink, ex)
             Error = ex
-            # SaveAdnAppendToErrorLog(ErrorLog)
         numberOfTries += 1
     return AllGood,Error
 
 def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
     # global DownloadPool
     package_name= item['id']
+    item_rev=item['changes'][0]['rev'].strip()
     packageFolderRoot = os.path.join(packages_path,item['id'])
     packageFolderTar = os.path.join(packageFolderRoot,"-")
+    packageFolderErrors = os.path.join(errors_global_path, packageFolderRoot)
     rev_file = os.path.join(packageFolderRoot,"__rev")
-    errorfile = os.path.join(packageFolderRoot,"__errors")
-    
-    item_rev=item['changes'][0]['rev'].strip()
+    errorfilelocal = os.path.join(packageFolderRoot,"__errors")
+    errorfileglobal = os.path.join(packageFolderErrors,"__errors")
     package_name_url_safe = urllib.parse.quote(package_name, safe='')
     json_index_file = os.path.join(packageFolderRoot,"index.json")
     # first we need to download the json file and name it as index.json
@@ -299,9 +261,8 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
                 shutil.rmtree(packageFolderRoot)
             return # skip this item
     os.makedirs(packageFolderTar,exist_ok=True) # this will make all folders required, including "-" which is used to store the tar balls
-    # we will store a file indicating latest revision we processed
     CurrentRev=None
-    # ShouldProcess=False
+    Errors = []
     if os.path.exists(rev_file):
         with open (rev_file,'r') as f:
             CurrentRev=f.readline().strip()
@@ -309,13 +270,15 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
         if not CurrentRev==item_rev:
             ForceDownloadJSON = True
             os.remove(rev_file)
-            if os.path.exists(errorfile): # clear any old error
-                os.remove(errorfile)
         else: # if the rev did not change, we can just return
             pass#return # CHANGE ME BACK LATER TO RETURN
-        
-    if os.path.exists(errorfile): # clear any old error
-        os.remove(errorfile)
+    
+    # cleanup
+    if os.path.exists(errorfilelocal): # clear any old error
+        os.remove(errorfilelocal)
+    if os.path.exists(packageFolderErrors):# clear any old error global
+        shutil.rmtree(packageFolderErrors)
+
     try:
         #write json index file
         downloadURL = SkimDB_Main_Registry_Link + package_name_url_safe
@@ -336,25 +299,25 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
             shasum = versions_dict[k]['dist']['shasum']
             package = {"link": tarBallDownloadLink,"downloadPath":packageFolderTar,"shasum":shasum}
             tars_to_download.append(package)
-        DownloadPool = ThreadPool(processes=MaxDownloadProcess)
+        DownloadPool = ThreadPool(processes=MaxDownloadsPerThread)
         results = DownloadPool.imap(DownloadTar,tars_to_download)
         DownloadPool.close()
         DownloadPool.join()
-        nothing_failed = True
         for r in results:
             allgood,errorvalue=r
             if not allgood:
-                nothing_failed = False
-                ErrorLog = "#\nSequence %d\n%s\n%s\n%s\n#" % (item['seq'],package_name,item_rev, errorvalue)
-                WriteFailedFile(errorfile,str.format("Error in Downlading - tar: %s" %(ErrorLog)),overwrite=False)
-                SaveAdnAppendToErrorLog(ErrorLog)
-        # DownloadPool = None
-        if nothing_failed: # if nothing failed, we will write __rev file
-             WriteTextFile(rev_file,item_rev)
+                Errors.append(errorvalue)
+        
     except Exception as ex:
-        ErrorLog = "#\nSequence %d\n%s\n%s\n%s\n%s\n#" % (item['seq'],package_name,item_rev, downloadURL, ex)
-        WriteFailedFile(errorfile,str.format("Error in Downlading - generic: %s" %(ErrorLog)),overwrite=True)
-        SaveAdnAppendToErrorLog(ErrorLog)
+        Errors.append(ex)
+
+    if len(Errors)==0: # if nothing failed, we will write __rev file
+        WriteTextFile(rev_file,item_rev)
+    else:
+        errorstring=json.dumps(Errors)
+        WriteFailedFile(errorfilelocal,errorstring)
+        os.makedirs(packageFolderErrors,exist_ok=True)
+        WriteFailedFile(errorfileglobal,errorstring)
     
 def GetStartingIndexForSorted(json_array,requriedValue):
     listofseqs = []
