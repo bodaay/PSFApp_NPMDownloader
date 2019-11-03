@@ -135,7 +135,7 @@ def WriteTextFile(filename,data):
         f.writelines(data)
 
 def WriteFailedFile(filefail,txt):
-    with open(filefail, 'a+') as f:
+    with open(filefail, 'w') as f:
         f.write(str(txt))
 
 
