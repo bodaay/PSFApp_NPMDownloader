@@ -134,13 +134,9 @@ def WriteTextFile(filename,data):
     with open (filename,'w') as f:
         f.writelines(data)
 
-def WriteFailedFile(filefail,txt,overwrite=False):
-    if overwrite:
-        with open(filefail, 'w') as f:
-            f.write(str(txt))
-    else: # append
-        with open(filefail, 'a+') as f:
-            f.write(str(txt))
+def WriteFailedFile(filefail,txt):
+    with open(filefail, 'a+') as f:
+        f.write(str(txt))
 
 
 def signal_handler(sig, frame):
