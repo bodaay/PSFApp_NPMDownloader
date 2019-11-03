@@ -228,7 +228,7 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
             ForceDownloadJSON = True
             os.remove(rev_file)
         else: # if the rev did not change, we can just return
-            pass#return # CHANGE ME BACK LATER TO RETURN
+            pass#return True# CHANGE ME BACK LATER TO RETURN
     
     # cleanup
     if os.path.exists(errorfilelocal): # clear any old error
@@ -276,6 +276,8 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
         WriteFailedFile(errorfilelocal,errorstring)
         os.makedirs(packageFolderErrors,exist_ok=True)
         WriteFailedFile(errorfileglobal,errorstring)
+        return False
+    return True
     
 def GetStartingIndexForSorted(json_array,requriedValue):
     listofseqs = []
