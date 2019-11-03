@@ -199,7 +199,7 @@ def DownloadTar(package):
                 Error = "Hash Mismatch file: %s, Calculated: %s , actual: %s\nDownloadLink:%s"%(tarBallLocalFile,shasum,package['shasum'], tarBallDownloadLink)
         except Exception as ex:
             AllGood = False
-            Error = ex
+            Error = str(ex)
         numberOfTries += 1
     return AllGood,Error
 
@@ -270,7 +270,7 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
                 Errors.append(errorvalue)
         
     except Exception as ex:
-        Errors.append(ex)
+        Errors.append(str(ex))
 
     if len(Errors)==0: # if nothing failed, we will write __rev file
         WriteTextFile(rev_file,item_rev)
