@@ -31,13 +31,20 @@ MaxDownloadsPerThread = 10
 MaxNumberOfDownloadRetries = 5
 BackupProgeressAfterBatches = 5
 ROOT_FOLDER_NAME = "/Synology/NPM/"
+DONWLOAD_CHUNK_SIZE_MB = 2
+
+
+
 SkimDB_Main_Registry_Link = "https://skimdb.npmjs.com/registry/"
 working_path = os.path.join(ROOT_FOLDER_NAME,"sync_data_indexes")
 packages_path = os.path.join(ROOT_FOLDER_NAME, "data")
 errors_global_path = os.path.join(working_path, "errors")
 LastSeqFile = os.path.join(working_path,"__lastsequece")
 
-DONWLOAD_CHUNK_SIZE_MB = 2   
+
+import resource
+resource.setrlimit(resource.RLIMIT_NOFILE, (10000,-1)) # this will increase the resourses limit
+
 
 def GetMD5(file1):
     if not os.path.exists(file1):
