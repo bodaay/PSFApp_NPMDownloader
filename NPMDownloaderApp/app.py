@@ -205,7 +205,7 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
     item_rev=item['changes'][0]['rev'].strip()
     packageFolderRoot = os.path.join(packages_path,item['id'])
     packageFolderTar = os.path.join(packageFolderRoot,"-")
-    packageFolderErrors = os.path.join(errors_global_path, packageFolderRoot)
+    packageFolderErrors = os.path.join(errors_global_path, item['id'])
     rev_file = os.path.join(packageFolderRoot,"__rev")
     errorfilelocal = os.path.join(packageFolderRoot,"__errors")
     errorfileglobal = os.path.join(packageFolderErrors,"__errors")
@@ -233,6 +233,7 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
     # cleanup
     if os.path.exists(errorfilelocal): # clear any old error
         os.remove(errorfilelocal)
+        
     if os.path.exists(packageFolderErrors):# clear any old error global
         shutil.rmtree(packageFolderErrors)
 
@@ -272,7 +273,7 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
         WriteTextFile(rev_file,item_rev)
     else:
         errorstring=json.dumps(Errors)
-        print (Errors)
+        # print (Errors)
         WriteFailedFile(errorfilelocal,errorstring)
         os.makedirs(packageFolderErrors,exist_ok=True)
         WriteFailedFile(errorfileglobal,errorstring)
