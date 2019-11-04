@@ -373,16 +373,36 @@ def start(argv):
             LatestSeq=  ls.readline()
     if LatestSeq == str(statsJson['committed_update_seq']):
         print (colored('No Updates since latest run, nothing to do...Bye','red'))
-    ChangesFeedURLSuffix="_changes?feed=normal&style=all_docs&since=" + LatestSeq
+    ChangesFeedURLSuffix="_changes?feed=normal&style=all_docs&since=" 
+    # link_skim_updates = SkimDB_Main_Registry_Link + ChangesFeedURLSuffix + LatestSeq
+    link_skim_full = SkimDB_Main_Registry_Link + ChangesFeedURLSuffix + "0"
     local_temp_file_name = os.path.join(working_path, "_changes.json")
     # make a backup of older file
     if os.path.exists(local_temp_file_name):
         shutil.copyfile(local_temp_file_name,local_temp_file_name+"_md5_"+GetMD5(local_temp_file_name)+".json")
-    else:
-        print (colored("I'm not downloading SkimDB _changes.json file, their connection is shit and unreliable, download it yourself from the link I provided, and paste the file into: %s" %(local_temp_file_name) ,'red'))
-        exit (1)
-    link = SkimDB_Main_Registry_Link + ChangesFeedURLSuffix
-    print ("To Get Latest SkimDB updates, use this Download Link: %s" %(colored(link,'green')))
+    
+    while True:
+        answer = input(colored("Do you want to try and download latest SkimDB file, sometimes this fails and really unreliable, their connection is piece of shit.",'cyan'))
+        answer = input(colored("Enter yes or no: ",'magenta'))
+        if answer.lower() == "yes":
+            print ("Downloading latest SkimDB full _changes.json. This will take sometime, it will, trust me..")
+            with requests.get(link_skim_full,stream=True,timeout=20) as r:
+                r.raise_for_status()
+                with open(local_temp_file_name,'wb') as f:
+                    shutil.copyfileobj(r.raw, f,length=DONWLOAD_CHUNK_SIZE_MB * 1024 * 1024)
+                    
+        elif answer.lower() == "no":
+            break
+        else:
+            print(colored("just yes or no, I'll not accept any other stupid answer",'red'))
+
+    if not os.path.exists(local_temp_file_name):
+        exit("Where is %s file? are you kidding?" % local_temp_file_name)
+    # else:
+    #     print (colored("I'm not downloading SkimDB _changes.json file, their connection is shit and unreliable, download it yourself from the link I provided, and paste the file into: %s" %(local_temp_file_name) ,'red'))
+    #     exit (1)
+    # 
+    # print ("To Get Latest SkimDB updates, use this Download Link: %s" %(colored(link,'green')))
     process_update(local_temp_file_name,LatestSeq)
     # # delete index.temp.json
     LastUpdateFile = os.path.join(working_path,timeStamped("_last_updated"))
