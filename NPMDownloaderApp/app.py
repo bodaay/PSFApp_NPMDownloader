@@ -175,7 +175,7 @@ def DownloadTar(package):
             cloudflare_error_500_max_tries = 3
             cloudflare_Download_link=tarBallDownloadLink
             while cloudflare_error_500_trick_tries<cloudflare_error_500_max_tries:
-                r = requests.get(cloudflare_Download_link, stream=True,timeout=20)
+                r = requests.get(cloudflare_Download_link, stream=True,timeout=600)
                 if r.status_code==200:
                     with open(tarBallLocalFile, 'wb') as f:
                         shutil.copyfileobj(r.raw, f,length=DONWLOAD_CHUNK_SIZE_MB * 1024 * 1024)
@@ -387,11 +387,11 @@ def start(argv):
         answer = input(colored("Enter yes or no: ",'magenta'))
         if answer.lower() == "yes":
             print ("Downloading latest SkimDB full _changes.json. This will take sometime, it will, trust me..")
-            with requests.get(link_skim_full,stream=True,timeout=20) as r:
+            with requests.get(link_skim_full,stream=True,timeout=600) as r:
                 r.raise_for_status()
                 with open(local_temp_file_name,'wb') as f:
                     shutil.copyfileobj(r.raw, f,length=DONWLOAD_CHUNK_SIZE_MB * 1024 * 1024)
-
+                break
         elif answer.lower() == "no":
             break
         else:
