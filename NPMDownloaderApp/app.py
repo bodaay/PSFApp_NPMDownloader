@@ -343,6 +343,23 @@ def process_update(json_file,lastseq):
          
         print(colored('Done :)','cyan'))
 
+def DownloadLatestSkimDB(link_skim_full,local_temp_file_name):
+    print ("Downloading latest SkimDB full _changes.json. This will take sometime, it will, trust me..")
+    r = requests.get(link_skim_full, stream=True)
+    # Total size in bytes.
+    # got this amazing progress with tqdm from: https://stackoverflow.com/questions/37573483/progress-bar-while-download-file-over-http-with-requests/37573701#37573701
+    total_size = int(r.headers.get('content-length', 0))
+    block_size = 1024 #1 Kibibyte
+    t=tqdm.tqdm(total=total_size, unit='iB', unit_scale=True)
+    with open(local_temp_file_name, 'wb') as f:
+        for data in r.iter_content(block_size):
+            t.update(len(data))
+            f.write(data)
+    t.close()
+    if total_size != 0 and t.n != total_size:
+        print("ERROR, something went wrong")
+        return False
+    return True 
 def start(argv):
     # I want to get the path of app.py
     base_path = os.path.dirname(os.path.realpath(__file__))
@@ -380,35 +397,23 @@ def start(argv):
     # make a backup of older file
     if os.path.exists(local_temp_file_name):
         shutil.copyfile(local_temp_file_name,local_temp_file_name+"_md5_"+GetMD5(local_temp_file_name)+".json")
-    
-    print()
-    print(colored("Do you want to try and download latest SkimDB file, sometimes this fails and really unreliable, their connection is piece of shit.",'cyan'))
-    while True:
-        answer = input(colored("Enter yes or no: ",'magenta'))
-        if answer.lower() == "yes":
-            print ("Downloading latest SkimDB full _changes.json. This will take sometime, it will, trust me..")
-            r = requests.get(link_skim_full, stream=True)
-            # Total size in bytes.
-            # got this amazing progress with tqdm from: https://stackoverflow.com/questions/37573483/progress-bar-while-download-file-over-http-with-requests/37573701#37573701
-            total_size = int(r.headers.get('content-length', 0))
-            block_size = 1024 #1 Kibibyte
-            t=tqdm.tqdm(total=total_size, unit='iB', unit_scale=True)
-            with open(local_temp_file_name, 'wb') as f:
-                for data in r.iter_content(block_size):
-                    t.update(len(data))
-                    f.write(data)
-            t.close()
-            if total_size != 0 and t.n != total_size:
-                print("ERROR, something went wrong")
-                exit(0)
-            break
-        elif answer.lower() == "no":
-            break
-        else:
-            print(colored("just yes or no, I'll not accept any other stupid answer",'red'))
-
-    if not os.path.exists(local_temp_file_name):
-        exit("Where is %s file? are you kidding?" % local_temp_file_name)
+        print()
+        print(colored("Do you want to try and download latest SkimDB file, sometimes this fails and really unreliable, their connection is piece of shit.",'cyan'))
+        while True:
+            answer = input(colored("Enter yes or no: ",'magenta'))
+            if answer.lower() == "yes":
+                if not DownloadLatestSkimDB(link_skim_full,local_temp_file_name):
+                    exit(0)
+                break
+            elif answer.lower() == "no":
+                break
+            else:
+                print(colored("just yes or no, I'll not accept any other stupid answer",'red'))
+    else:
+        if not DownloadLatestSkimDB(link_skim_full,local_temp_file_name):
+            exit(0)
+    # if not os.path.exists(local_temp_file_name):
+    #     exit("Where is %s file? are you kidding?" % local_temp_file_name)
     # else:
     #     print (colored("I'm not downloading SkimDB _changes.json file, their connection is shit and unreliable, download it yourself from the link I provided, and paste the file into: %s" %(local_temp_file_name) ,'red'))
     #     exit (1)
