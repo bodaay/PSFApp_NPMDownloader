@@ -387,11 +387,19 @@ def start(argv):
         answer = input(colored("Enter yes or no: ",'magenta'))
         if answer.lower() == "yes":
             print ("Downloading latest SkimDB full _changes.json. This will take sometime, it will, trust me..")
-            with requests.get(link_skim_full,stream=True,timeout=600) as r:
-                r.raise_for_status()
-                with open(local_temp_file_name,'wb') as f:
-                    shutil.copyfileobj(r.raw, f,length=DONWLOAD_CHUNK_SIZE_MB * 1024 * 1024)
-                break
+            r = requests.get(link_skim_full, stream=True)
+            # Total size in bytes.
+            total_size = int(r.headers.get('content-length', 0))
+            block_size = 1024 #1 Kibibyte
+            t=tqdm(total=total_size, unit='iB', unit_scale=True)
+            with open(local_temp_file_name, 'wb') as f:
+                for data in r.iter_content(block_size):
+                    t.update(len(data))
+                    f.write(data)
+            t.close()
+            if total_size != 0 and t.n != total_size:
+                print("ERROR, something went wrong")
+                exit(0)
         elif answer.lower() == "no":
             break
         else:
