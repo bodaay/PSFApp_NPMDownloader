@@ -391,7 +391,7 @@ def start(argv):
             # Total size in bytes.
             total_size = int(r.headers.get('content-length', 0))
             block_size = 1024 #1 Kibibyte
-            t=tqdm(total=total_size, unit='iB', unit_scale=True)
+            t=tqdm.tqdm(total=total_size, unit='iB', unit_scale=True)
             with open(local_temp_file_name, 'wb') as f:
                 for data in r.iter_content(block_size):
                     t.update(len(data))
