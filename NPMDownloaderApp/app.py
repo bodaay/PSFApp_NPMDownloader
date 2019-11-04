@@ -345,8 +345,9 @@ def process_update(json_file,lastseq):
 
 def start(argv):
     # I want to get the path of app.py
-    #base_path = os.path.dirname(os.path.realpath(__file__))
-
+    base_path = os.path.dirname(os.path.realpath(__file__))
+    nginx_original_template_path = os.path.join(base_path,"__nginx_template")
+    nginx_detination_file = os.path.join(working_path,"npm.green.org")
     if not os.path.exists(working_path):
         os.makedirs(working_path, exist_ok=True)
     if not os.path.exists(packages_path):
@@ -355,7 +356,9 @@ def start(argv):
     #     os.makedirs(logfile_path, exist_ok=True)
     if not os.path.exists(errors_global_path):
         os.makedirs(errors_global_path, exist_ok=True)
-    
+    if not os.path.exists(nginx_detination_file):
+        shutil.copyfile(nginx_original_template_path, nginx_detination_file)
+        print (colored("Copied nginx stie setting template to: %s"%nginx_detination_file,'green'))
     print ("Batch Size: %s      Max Number of running Threads: %s      Max Downloads Per Thread: %s      Stream Download Chunk Size (MB): %s" %
             (colored(BatchSize,"cyan") ,colored(MaxThreads,"cyan"),colored(MaxDownloadsPerThread,"cyan"),colored(DONWLOAD_CHUNK_SIZE_MB,"cyan")))
     print ("You may want to increase your soft limit, by doing\n ulimit -n 10000")
