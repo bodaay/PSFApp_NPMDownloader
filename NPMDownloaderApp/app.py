@@ -381,8 +381,9 @@ def start(argv):
     if os.path.exists(local_temp_file_name):
         shutil.copyfile(local_temp_file_name,local_temp_file_name+"_md5_"+GetMD5(local_temp_file_name)+".json")
     
+    print()
+    print(colored("Do you want to try and download latest SkimDB file, sometimes this fails and really unreliable, their connection is piece of shit.",'cyan'))
     while True:
-        answer = input(colored("Do you want to try and download latest SkimDB file, sometimes this fails and really unreliable, their connection is piece of shit.",'cyan'))
         answer = input(colored("Enter yes or no: ",'magenta'))
         if answer.lower() == "yes":
             print ("Downloading latest SkimDB full _changes.json. This will take sometime, it will, trust me..")
@@ -390,7 +391,7 @@ def start(argv):
                 r.raise_for_status()
                 with open(local_temp_file_name,'wb') as f:
                     shutil.copyfileobj(r.raw, f,length=DONWLOAD_CHUNK_SIZE_MB * 1024 * 1024)
-                    
+
         elif answer.lower() == "no":
             break
         else:
