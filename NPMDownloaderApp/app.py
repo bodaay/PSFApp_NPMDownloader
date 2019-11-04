@@ -166,11 +166,12 @@ def DownloadTar(package):
                     AllGood = True
                     break
             #getting here means never downloaded before
-
+            # sometimes we get error 500, cloudflare: workere exceeded limit bullshit
             # I don't know how imran tried this stupid trick and it worked, we need to append any extra letter to original url do it will download
             # for example:
             # This link: https://registry.npmjs.org/@middy/http-content-negotiation/-/http-content-negotiation-1.0.0-alpha.48.tgz
             # becomes: https://registry.npmjs.org/a1c/@middy/http-content-negotiation/-/http-content-negotiation-1.0.0-alpha.48.tgz
+            # this trick will not work on older packages, for some reason it only work in packages uploaded less that a year ago (2019 as of this writing)
             cloudflare_error_500_trick_tries= 0
             cloudflare_error_500_max_tries = 3
             cloudflare_Download_link=tarBallDownloadLink
