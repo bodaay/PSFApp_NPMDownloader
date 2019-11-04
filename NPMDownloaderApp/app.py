@@ -389,6 +389,7 @@ def start(argv):
             print ("Downloading latest SkimDB full _changes.json. This will take sometime, it will, trust me..")
             r = requests.get(link_skim_full, stream=True)
             # Total size in bytes.
+            # got this amazing progress with tqdm from: https://stackoverflow.com/questions/37573483/progress-bar-while-download-file-over-http-with-requests/37573701#37573701
             total_size = int(r.headers.get('content-length', 0))
             block_size = 1024 #1 Kibibyte
             t=tqdm.tqdm(total=total_size, unit='iB', unit_scale=True)
@@ -400,6 +401,7 @@ def start(argv):
             if total_size != 0 and t.n != total_size:
                 print("ERROR, something went wrong")
                 exit(0)
+            break
         elif answer.lower() == "no":
             break
         else:
