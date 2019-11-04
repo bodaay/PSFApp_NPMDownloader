@@ -358,7 +358,7 @@ def start(argv):
         os.makedirs(errors_global_path, exist_ok=True)
     if not os.path.exists(nginx_detination_file):
         shutil.copyfile(nginx_original_template_path, nginx_detination_file)
-        print (colored("Copied nginx stie setting template to: %s"%nginx_detination_file,'green'))
+        print (colored("Copied nginx site setting template to: %s"%nginx_detination_file,'green'))
     print ("Batch Size: %s      Max Number of running Threads: %s      Max Downloads Per Thread: %s      Stream Download Chunk Size (MB): %s" %
             (colored(BatchSize,"cyan") ,colored(MaxThreads,"cyan"),colored(MaxDownloadsPerThread,"cyan"),colored(DONWLOAD_CHUNK_SIZE_MB,"cyan")))
     print ("You may want to increase your soft limit, by doing\n ulimit -n 10000")
