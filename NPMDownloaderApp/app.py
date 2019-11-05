@@ -217,6 +217,10 @@ def DownloadAndProcessesItemJob(item,ForceDownloadJSON=False):
         if item['deleted']==True:
             if os.path.exists(packageFolderRoot):
                 shutil.rmtree(packageFolderRoot)
+            if os.path.exists(errorfilelocal): # clear any old error
+                os.remove(errorfilelocal)
+            if os.path.exists(packageFolderErrors):# clear any old error global
+                shutil.rmtree(packageFolderErrors)
             return True# skip this item
     os.makedirs(packageFolderTar,exist_ok=True) # this will make all folders required, including "-" which is used to store the tar balls
     CurrentRev=None
