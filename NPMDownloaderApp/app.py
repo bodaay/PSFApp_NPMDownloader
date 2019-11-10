@@ -176,7 +176,7 @@ def DownloadTar(package):
             cloudflare_error_500_max_tries = 3
             cloudflare_Download_link=tarBallDownloadLink
             while cloudflare_error_500_trick_tries<cloudflare_error_500_max_tries:
-                r = requests.get(cloudflare_Download_link, stream=True,timeout=600)
+                r = requests.get(cloudflare_Download_link, stream=True,timeout=20)
                 if r.status_code==200:
                     with open(tarBallLocalFile, 'wb') as f:
                         shutil.copyfileobj(r.raw, f,length=DONWLOAD_CHUNK_SIZE_MB * 1024 * 1024)
@@ -385,7 +385,7 @@ def start(argv):
             (colored(BatchSize,"cyan") ,colored(MaxThreads,"cyan"),colored(MaxDownloadsPerThread,"cyan"),colored(DONWLOAD_CHUNK_SIZE_MB,"cyan")))
     print ("You may want to increase your soft limit, by doing\n ulimit -n 10000")
     print ("Connecting to SkimDB to get latest Stats...")
-    r = requests.get(SkimDB_Main_Registry_Link, timeout=600)
+    r = requests.get(SkimDB_Main_Registry_Link, timeout=20)
     statsJson = json.loads(r.content)
     # print(statsJson)
     print ("Total Number of packages: "+ colored(str(statsJson['doc_count']),'red'))
